@@ -61,6 +61,8 @@ model ArticleAgentRun {
 model BulkProductDescription {
   id               String   @id @default(cuid())
   batchId          String
+  batchLabel       String?
+  batchDescription String?
   sourceProductId  String
   name             String
   productCode      String?

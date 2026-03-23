@@ -13,11 +13,11 @@ export const webDescriptionRouter = Router();
 const GenerateSchema = z.object({
   productId: z.string().min(1),
   variantName: z.string().min(2),
-  ean: z.string().min(3),
-  productCode: z.string().min(1),
+  ean: z.string().optional().default(""),
+  productCode: z.string().optional().default(""),
   shortDescription: z.string().min(5),
   longDescription: z.string().min(10),
-  manufacturer: z.string().min(2),
+  manufacturer: z.string().optional().default(""),
   model: z.string().optional()
 });
 
@@ -29,7 +29,9 @@ const GenerateV2Schema = GenerateSchema.extend({
 
 const BulkImportSchema = z.object({
   csvContent: z.string().min(1),
-  delimiter: z.string().optional().default(";")
+  delimiter: z.string().optional().default(";"),
+  batchLabel: z.string().optional().default(""),
+  batchDescription: z.string().optional().default("")
 });
 
 const BulkGenerateSchema = z.object({
@@ -88,6 +90,8 @@ webDescriptionRouter.post("/bulk/import", asyncHandler(async (req, res) => {
 
   const rows = parseDelimited(parsed.data.csvContent, parsed.data.delimiter || ";");
   if (rows.length < 2) return res.status(400).json({ error: "CSV neobsahuje data." });
+  const batchLabel = parsed.data.batchLabel.trim();
+  const batchDescription = parsed.data.batchDescription.trim();
 
   const headers = rows[0].map((h) => normalizeHeader(h));
   const batchId = randomUUID();
@@ -104,6 +108,8 @@ webDescriptionRouter.post("/bulk/import", asyncHandler(async (req, res) => {
       const quality = evaluateInputQuality(row);
       return {
         batchId,
+        batchLabel: batchLabel || null,
+        batchDescription: batchDescription || null,
         sourceProductId: row.sourceProductId || "missing-id",
         name: row.name || "Bez názvu",
         productCode: row.productCode || null,
@@ -126,10 +132,72 @@ webDescriptionRouter.post("/bulk/import", asyncHandler(async (req, res) => {
 
   return res.status(201).json({
     batchId,
+    batchLabel,
+    batchDescription,
     importedCount: items.length,
     summary: buildBatchSummary(items),
     items
   });
+}));
+
+webDescriptionRouter.get("/bulk/list", asyncHandler(async (_req, res) => {
+  const rows = await prisma.bulkProductDescription.findMany({
+    select: {
+      batchId: true,
+      batchLabel: true,
+      batchDescription: true,
+      status: true,
+      totalCostUsd: true,
+      totalTokens: true,
+      createdAt: true,
+      updatedAt: true
+    },
+    orderBy: { updatedAt: "desc" }
+  });
+  if (rows.length === 0) return res.json({ batches: [] });
+
+  const grouped = new Map<string, Array<{
+    batchLabel: string | null;
+    batchDescription: string | null;
+    status: string;
+    totalCostUsd: number | null;
+    totalTokens: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }>>();
+  for (const row of rows) {
+    const existing = grouped.get(row.batchId) ?? [];
+    existing.push({
+      status: row.status,
+      batchLabel: row.batchLabel,
+      batchDescription: row.batchDescription,
+      totalCostUsd: row.totalCostUsd,
+      totalTokens: row.totalTokens,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    });
+    grouped.set(row.batchId, existing);
+  }
+
+  const batches = Array.from(grouped.entries())
+    .map(([batchId, items]) => {
+      const summary = buildBatchSummary(items);
+      const latestUpdatedAt = items.reduce((max, i) => i.updatedAt > max ? i.updatedAt : max, items[0].updatedAt);
+      const createdAt = items.reduce((min, i) => i.createdAt < min ? i.createdAt : min, items[0].createdAt);
+      const batchLabel = items.find((i) => i.batchLabel && i.batchLabel.trim())?.batchLabel ?? null;
+      const batchDescription = items.find((i) => i.batchDescription && i.batchDescription.trim())?.batchDescription ?? null;
+      return {
+        batchId,
+        batchLabel,
+        batchDescription,
+        createdAt,
+        updatedAt: latestUpdatedAt,
+        summary
+      };
+    })
+    .sort((a, b) => +b.updatedAt - +a.updatedAt);
+
+  return res.json({ batches });
 }));
 
 webDescriptionRouter.get("/bulk/:batchId", asyncHandler(async (req, res) => {
@@ -138,8 +206,12 @@ webDescriptionRouter.get("/bulk/:batchId", asyncHandler(async (req, res) => {
     where: { batchId },
     orderBy: { createdAt: "asc" }
   });
+  const batchLabel = items.find((i) => i.batchLabel && i.batchLabel.trim())?.batchLabel ?? null;
+  const batchDescription = items.find((i) => i.batchDescription && i.batchDescription.trim())?.batchDescription ?? null;
   return res.json({
     batchId,
+    batchLabel,
+    batchDescription,
     total: items.length,
     summary: buildBatchSummary(items),
     items
@@ -496,18 +568,9 @@ function evaluateInputQuality(row: {
     score -= 12;
     issues.push("chybí krátký popis (vygeneruje se z dlouhého)");
   }
-  if (!row.ean) {
-    score -= 10;
-    issues.push("chybí EAN");
-  }
-  if (!row.manufacturer) {
-    score -= 8;
-    issues.push("chybí výrobce/brand");
-  }
-  if (!row.productCode) {
-    score -= 6;
-    issues.push("chybí kód produktu");
-  }
+  if (!row.ean) issues.push("EAN není vyplněn (volitelné)");
+  if (!row.manufacturer) issues.push("výrobce/brand není vyplněn (volitelné)");
+  if (!row.productCode) issues.push("kód produktu není vyplněn (volitelné)");
   score -= requiredMissing.length * 25;
   issues.push(...requiredMissing);
   score = Math.max(0, Math.min(100, score));

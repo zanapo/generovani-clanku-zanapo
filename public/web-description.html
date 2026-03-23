@@ -259,6 +259,34 @@
       .s-input_incomplete { background: rgba(234, 179, 8, 0.16); color: #7c4a03; border-color: rgba(234, 179, 8, 0.3); }
       .s-generating { background: rgba(59, 130, 246, 0.15); color: #1e40af; border-color: rgba(59, 130, 246, 0.3); }
       .s-input_ready, .s-imported { background: rgba(15, 23, 42, 0.08); color: #1e293b; border-color: rgba(15, 23, 42, 0.16); }
+      .sub-tabs {
+        display: inline-flex;
+        gap: 6px;
+        margin: 10px 0 12px;
+        padding: 5px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: #f4f7fb;
+      }
+      .sub-tab-btn {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 13px;
+        background: transparent;
+        color: #2b3b52;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .sub-tab-btn.active {
+        background: var(--primary);
+        color: #fff;
+      }
+      .tab-panel.hidden {
+        display: none;
+      }
+      .hidden {
+        display: none;
+      }
       .summary-grid {
         display: grid;
         grid-template-columns: repeat(6, minmax(110px, 1fr));
@@ -314,13 +342,19 @@
       <section class="hero">
         <h1>Generování popisku v2</h1>
         <p>Moderní editor pro produktové popisky: vstupy vlevo, výstup a náhled vpravo. Připravené pro rychlé vložení na web.</p>
+        <div class="sub-tabs" role="tablist" aria-label="Hlavní menu generování">
+          <button id="bulkTabBulk" type="button" class="sub-tab-btn active">Hromadné generování</button>
+          <button id="bulkTabManual" type="button" class="sub-tab-btn">Ruční vložení</button>
+          <button id="bulkTabProgress" type="button" class="sub-tab-btn">Průběh generování</button>
+          <button id="bulkTabList" type="button" class="sub-tab-btn">Seznam batch</button>
+        </div>
       </section>
 
-      <section class="layout">
+      <section class="layout hidden" id="manualLayoutSection">
         <div>
-          <div class="card">
+          <div class="card" id="manualEntryCard">
             <h2>Vstupní data produktu</h2>
-            <p class="muted">Vyplň 6 polí a systém vygeneruje strukturované HTML.</p>
+            <p class="muted">Primární jsou ID produktu, název, krátký a dlouhý popis. Ostatní pole jsou volitelná.</p>
 
             <label for="variantName">1) Název varianty</label>
             <input id="variantName" placeholder="Např. Trénink paměti: Maxi Člověče nezlob se" />
@@ -331,13 +365,13 @@
                 <input id="productId" placeholder="Např. 613294" />
               </div>
               <div>
-                <label for="ean">2) EAN kód</label>
+                <label for="ean">EAN kód (volitelně)</label>
                 <input id="ean" placeholder="Např. 8590878613294" />
               </div>
             </div>
             <div class="grid-2">
               <div>
-                <label for="productCode">3) Kód produktu</label>
+                <label for="productCode">Kód produktu (volitelně)</label>
                 <input id="productCode" placeholder="Např. 613294" />
               </div>
               <div></div>
@@ -351,7 +385,7 @@
 
             <div class="grid-2">
               <div>
-                <label for="manufacturer">6) Výrobce</label>
+                <label for="manufacturer">Výrobce (volitelně)</label>
                 <input id="manufacturer" placeholder="Např. Dino" />
               </div>
               <div>
@@ -445,49 +479,101 @@
         </div>
       </section>
 
-      <section class="card" style="margin-top: 16px;">
+      <section class="card" style="margin-top: 16px;" id="bulkSectionCard">
         <h2>Hromadné generování z CSV</h2>
         <p class="muted">Nahraj CSV, zkontroluj kvalitu vstupů a jedním klikem vygeneruj CZ+SK popisky i SQL do DB.</p>
-        <div class="grid-2">
-          <div>
-            <label for="bulkCsvFile">CSV soubor</label>
-            <input id="bulkCsvFile" type="file" accept=".csv,text/csv" />
+
+        <div id="bulkGeneratePanel" class="tab-panel">
+          <div id="bulkImportPanel">
+          <div class="grid-2">
+            <div>
+              <label for="bulkBatchLabel">Název batch</label>
+              <input id="bulkBatchLabel" placeholder="Např. Vánoce 2026 - deskové hry" />
+            </div>
+            <div>
+              <label for="bulkBatchDescription">Krátký popis batch (volitelně)</label>
+              <input id="bulkBatchDescription" placeholder="Např. import produktů z exportu 2026-03-23" />
+            </div>
           </div>
-          <div>
-            <label for="bulkBatchId">Batch ID</label>
-            <input id="bulkBatchId" class="mono" placeholder="Automaticky po importu..." />
+          <div class="grid-2">
+            <div>
+              <label for="bulkCsvFile">CSV soubor</label>
+              <input id="bulkCsvFile" type="file" accept=".csv,text/csv" />
+            </div>
+            <div>
+              <label for="bulkBatchId">Batch ID</label>
+              <input id="bulkBatchId" class="mono" placeholder="Automaticky po importu..." />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="bulkImportBtn" type="button">Importovat CSV</button>
+            <button id="bulkGenerateBtn" type="button" class="btn-secondary">Vygenerovat vše (připravené)</button>
+          </div>
+          </div>
+
+          <div id="bulkProgressPanel" class="hidden">
+          <div class="actions">
+            <button id="bulkRefreshBtn" type="button" class="btn-secondary">Obnovit průběh</button>
+            <button id="bulkCopySqlBtn" type="button" class="btn-secondary" disabled>Kopírovat SQL batch</button>
+          </div>
+          <div id="bulkStatus" class="status-line muted">Pro import se očekává CSV s poli jako ID, Název, Kód produktu, EAN, Krátký/Dlouhý popis, Výrobce.</div>
+          <div id="bulkSummary" class="summary-grid"></div>
+          <label for="bulkSqlOut">SQL pro celý batch</label>
+          <pre id="bulkSqlOut">-</pre>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID produktu</th>
+                  <th>Název</th>
+                  <th>Skóre</th>
+                  <th>Stav</th>
+                  <th>Tokeny</th>
+                  <th>Cena USD</th>
+                  <th>Problémy</th>
+                  <th>CZ SQL</th>
+                  <th>SK SQL</th>
+                </tr>
+              </thead>
+              <tbody id="bulkTableBody">
+                <tr><td colspan="9" class="muted">Zatím bez dat.</td></tr>
+              </tbody>
+            </table>
+          </div>
           </div>
         </div>
-        <div class="actions">
-          <button id="bulkImportBtn" type="button">Importovat CSV</button>
-          <button id="bulkGenerateBtn" type="button" class="btn-secondary">Vygenerovat vše (připravené)</button>
-          <button id="bulkRefreshBtn" type="button" class="btn-secondary">Načíst batch</button>
-          <button id="bulkLoadSqlBtn" type="button" class="btn-secondary">Načíst SQL batch</button>
-          <button id="bulkCopySqlBtn" type="button" class="btn-secondary" disabled>Kopírovat SQL batch</button>
-        </div>
-        <div id="bulkStatus" class="status-line muted">Pro import se očekává CSV s poli jako ID, Název, Kód produktu, EAN, Krátký/Dlouhý popis, Výrobce.</div>
-        <div id="bulkSummary" class="summary-grid"></div>
-        <label for="bulkSqlOut">SQL pro celý batch</label>
-        <pre id="bulkSqlOut">-</pre>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID produktu</th>
-                <th>Název</th>
-                <th>Skóre</th>
-                <th>Stav</th>
-                <th>Tokeny</th>
-                <th>Cena USD</th>
-                <th>Problémy</th>
-                <th>CZ SQL</th>
-                <th>SK SQL</th>
-              </tr>
-            </thead>
-            <tbody id="bulkTableBody">
-              <tr><td colspan="9" class="muted">Zatím bez dat.</td></tr>
-            </tbody>
-          </table>
+
+        <div id="bulkListPanel" class="tab-panel hidden">
+          <div class="actions">
+            <button id="bulkListRefreshBtn" type="button" class="btn-secondary">Obnovit seznam batch</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Název</th>
+                  <th>Popis</th>
+                  <th>Celkem</th>
+                  <th>Čeká</th>
+                  <th>Generuje</th>
+                  <th>Hotovo</th>
+                  <th>Chyba</th>
+                  <th>Cena USD</th>
+                  <th>Aktualizace</th>
+                  <th>Akce</th>
+                </tr>
+              </thead>
+              <tbody id="bulkListBody">
+                <tr><td colspan="11" class="muted">Načti seznam batch.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <label for="bulkListSqlOut">SQL z vybraného batch (CZ+SK)</label>
+          <pre id="bulkListSqlOut">-</pre>
+          <div class="actions">
+            <button id="bulkListCopySqlBtn" type="button" class="btn-secondary" disabled>Kopírovat SQL z vybraného batch</button>
+          </div>
         </div>
       </section>
     </main>
@@ -509,16 +595,32 @@
       const copySkBtn = document.getElementById("copySkBtn");
       const copySqlSkBtn = document.getElementById("copySqlSkBtn");
       const bulkCsvFile = document.getElementById("bulkCsvFile");
+      const bulkBatchLabel = document.getElementById("bulkBatchLabel");
+      const bulkBatchDescription = document.getElementById("bulkBatchDescription");
       const bulkBatchId = document.getElementById("bulkBatchId");
       const bulkImportBtn = document.getElementById("bulkImportBtn");
       const bulkGenerateBtn = document.getElementById("bulkGenerateBtn");
       const bulkRefreshBtn = document.getElementById("bulkRefreshBtn");
-      const bulkLoadSqlBtn = document.getElementById("bulkLoadSqlBtn");
       const bulkCopySqlBtn = document.getElementById("bulkCopySqlBtn");
       const bulkStatus = document.getElementById("bulkStatus");
       const bulkTableBody = document.getElementById("bulkTableBody");
       const bulkSqlOut = document.getElementById("bulkSqlOut");
       const bulkSummary = document.getElementById("bulkSummary");
+      const bulkTabBulk = document.getElementById("bulkTabBulk");
+      const bulkTabManual = document.getElementById("bulkTabManual");
+      const bulkTabProgress = document.getElementById("bulkTabProgress");
+      const bulkTabList = document.getElementById("bulkTabList");
+      const bulkGeneratePanel = document.getElementById("bulkGeneratePanel");
+      const bulkImportPanel = document.getElementById("bulkImportPanel");
+      const bulkProgressPanel = document.getElementById("bulkProgressPanel");
+      const bulkListPanel = document.getElementById("bulkListPanel");
+      const bulkListRefreshBtn = document.getElementById("bulkListRefreshBtn");
+      const bulkListBody = document.getElementById("bulkListBody");
+      const bulkListSqlOut = document.getElementById("bulkListSqlOut");
+      const bulkListCopySqlBtn = document.getElementById("bulkListCopySqlBtn");
+      const manualEntryCard = document.getElementById("manualEntryCard");
+      const manualLayoutSection = document.getElementById("manualLayoutSection");
+      const bulkSectionCard = document.getElementById("bulkSectionCard");
 
       const formEls = {
         variantName: document.getElementById("variantName"),
@@ -543,6 +645,51 @@
       let lastBulkSql = "";
       let bulkPollTimer = null;
       let selectedBulkItemId = "";
+      let selectedBatchSql = "";
+
+      bulkTabBulk.addEventListener("click", () => setBulkTab("bulk"));
+      bulkTabManual.addEventListener("click", () => setBulkTab("manual"));
+      bulkTabProgress.addEventListener("click", () => setBulkTab("progress"));
+      bulkTabList.addEventListener("click", () => {
+        setBulkTab("list");
+        loadBatchList();
+      });
+
+      bulkListRefreshBtn.addEventListener("click", () => {
+        loadBatchList();
+      });
+
+      bulkListCopySqlBtn.addEventListener("click", async () => {
+        if (!selectedBatchSql) return;
+        try {
+          await navigator.clipboard.writeText(selectedBatchSql);
+          const original = bulkListCopySqlBtn.textContent;
+          bulkListCopySqlBtn.textContent = "Zkopírováno";
+          setTimeout(() => {
+            bulkListCopySqlBtn.textContent = original;
+          }, 1100);
+        } catch {
+          errorEl.textContent = "Nepodařilo se zkopírovat SQL batch do schránky.";
+        }
+      });
+
+      bulkListBody.addEventListener("click", (event) => {
+        const btn = event.target.closest("button[data-batch-id]");
+        if (!btn) return;
+        const batchId = btn.getAttribute("data-batch-id");
+        const action = btn.getAttribute("data-action");
+        if (!batchId) return;
+        if (action === "sql") {
+          loadBatchSqlToList(batchId);
+          return;
+        }
+        currentBatchId = batchId;
+        bulkBatchId.value = batchId;
+        setBulkTab("progress");
+        bulkRefreshBtn.click();
+      });
+
+      setBulkTab("bulk");
 
       previewLang.addEventListener("change", () => {
         refreshPreviewFromCurrentOutputs();
@@ -571,8 +718,8 @@
         };
         const generationVersion = formEls.generationVersion.value;
 
-        if (!payload.productId || !payload.variantName || !payload.ean || !payload.productCode || !payload.shortDescription || !payload.longDescription || !payload.manufacturer) {
-          statusEl.textContent = "Doplň prosím všechna povinná vstupní pole.";
+        if (!payload.productId || !payload.variantName || !payload.shortDescription || !payload.longDescription) {
+          statusEl.textContent = "Doplň prosím povinná pole: ID produktu, název, krátký a dlouhý popis.";
           return;
         }
 
@@ -689,22 +836,33 @@
           bulkStatus.textContent = "Vyber nejdříve CSV soubor.";
           return;
         }
+        const label = (bulkBatchLabel.value || "").trim();
+        if (!label) {
+          bulkStatus.textContent = "Vyplň prosím název batch, ať víš, co v něm je.";
+          return;
+        }
         bulkStatus.textContent = "Importuji CSV...";
         try {
           const csvContent = await file.text();
           const res = await fetch("/api/web-description/bulk/import", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ csvContent, delimiter: ";" })
+            body: JSON.stringify({
+              csvContent,
+              delimiter: ";",
+              batchLabel: label,
+              batchDescription: (bulkBatchDescription.value || "").trim()
+            })
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Import selhal.");
           currentBatchId = String(data.batchId || "");
           bulkBatchId.value = currentBatchId;
-          bulkStatus.textContent = `Import hotov: ${data.importedCount || 0} produktů.`;
+          bulkStatus.textContent = `Import hotov: ${data.importedCount || 0} produktů (${data.batchLabel || "bez názvu"}).`;
           renderBulkTable(Array.isArray(data.items) ? data.items : []);
           renderBulkSummary(data.summary);
           startBulkPolling();
+          setBulkTab("progress");
         } catch (err) {
           bulkStatus.textContent = "Import CSV selhal.";
           errorEl.textContent = err instanceof Error ? err.message : "Import CSV selhal.";
@@ -728,6 +886,8 @@
           renderBulkTable(Array.isArray(data.items) ? data.items : []);
           renderBulkSummary(data.summary);
           startBulkPolling();
+          setBulkTab("progress");
+          await loadBulkSqlForBatch(batchId, true);
         } catch (err) {
           bulkStatus.textContent = "Načtení batch selhalo.";
           errorEl.textContent = err instanceof Error ? err.message : "Načtení batch selhalo.";
@@ -754,31 +914,11 @@
           renderBulkTable(Array.isArray(data.items) ? data.items : []);
           renderBulkSummary(data.summary);
           startBulkPolling();
+          setBulkTab("progress");
+          await loadBulkSqlForBatch(batchId, true);
         } catch (err) {
           bulkStatus.textContent = "Bulk generování selhalo.";
           errorEl.textContent = err instanceof Error ? err.message : "Bulk generování selhalo.";
-        }
-      });
-
-      bulkLoadSqlBtn.addEventListener("click", async () => {
-        errorEl.textContent = "";
-        const batchId = (bulkBatchId.value || currentBatchId || "").trim();
-        if (!batchId) {
-          bulkStatus.textContent = "Nejprve importuj CSV nebo zadej Batch ID.";
-          return;
-        }
-        bulkStatus.textContent = "Načítám SQL pro batch...";
-        try {
-          const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(batchId)}/sql`);
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení SQL selhalo.");
-          lastBulkSql = String(data.sqlCombined || "");
-          bulkSqlOut.textContent = lastBulkSql || "-";
-          bulkCopySqlBtn.disabled = !lastBulkSql;
-          bulkStatus.textContent = `SQL připraveno. CZ: ${data.countCz || 0}, SK: ${data.countSk || 0}.`;
-        } catch (err) {
-          bulkStatus.textContent = "Načtení SQL selhalo.";
-          errorEl.textContent = err instanceof Error ? err.message : "Načtení SQL selhalo.";
         }
       });
 
@@ -907,6 +1047,100 @@
         ].join("");
       }
 
+      function setBulkTab(tab) {
+        const showBulk = tab === "bulk";
+        const showProgress = tab === "progress";
+        const showList = tab === "list";
+        const showManual = tab === "manual";
+
+        bulkTabBulk.classList.toggle("active", showBulk);
+        bulkTabManual.classList.toggle("active", showManual);
+        bulkTabProgress.classList.toggle("active", showProgress);
+        bulkTabList.classList.toggle("active", showList);
+
+        bulkGeneratePanel.classList.toggle("hidden", !(showBulk || showProgress));
+        bulkImportPanel.classList.toggle("hidden", !showBulk);
+        bulkProgressPanel.classList.toggle("hidden", !showProgress);
+        bulkListPanel.classList.toggle("hidden", !showList);
+        manualLayoutSection.classList.toggle("hidden", !showManual);
+        bulkSectionCard.classList.toggle("hidden", showManual);
+
+        if (showManual) {
+          manualEntryCard?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      async function loadBatchList() {
+        bulkListBody.innerHTML = '<tr><td colspan="9" class="muted">Načítám...</td></tr>';
+        try {
+          const res = await fetch("/api/web-description/bulk/list");
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení seznamu batch selhalo.");
+          const batches = Array.isArray(data.batches) ? data.batches : [];
+          if (batches.length === 0) {
+            bulkListBody.innerHTML = '<tr><td colspan="11" class="muted">Zatím žádné batch.</td></tr>';
+            return;
+          }
+          bulkListBody.innerHTML = batches.map((b) => {
+            const s = b.summary || {};
+            const updated = b.updatedAt ? new Date(b.updatedAt).toLocaleString("cs-CZ") : "-";
+            return `<tr>
+              <td class="mono">${escapeHtml(String(b.batchId || ""))}</td>
+              <td>${escapeHtml(String(b.batchLabel || "(bez názvu)"))}</td>
+              <td>${escapeHtml(String(b.batchDescription || "-"))}</td>
+              <td>${escapeHtml(String(s.total ?? "-"))}</td>
+              <td>${escapeHtml(String(s.waiting ?? "-"))}</td>
+              <td>${escapeHtml(String(s.generating ?? "-"))}</td>
+              <td>${escapeHtml(String(s.generated ?? "-"))}</td>
+              <td>${escapeHtml(String(s.failed ?? "-"))}</td>
+              <td class="mono">${formatUsd(s.totalCostUsd)}</td>
+              <td>${escapeHtml(updated)}</td>
+              <td>
+                <button type="button" class="btn-secondary" data-action="open" data-batch-id="${escapeHtml(String(b.batchId || ""))}">Otevřít</button>
+                <button type="button" class="btn-secondary" data-action="sql" data-batch-id="${escapeHtml(String(b.batchId || ""))}">SQL CZ+SK</button>
+              </td>
+            </tr>`;
+          }).join("");
+        } catch (err) {
+          bulkListBody.innerHTML = '<tr><td colspan="11" class="muted">Načtení selhalo.</td></tr>';
+          errorEl.textContent = err instanceof Error ? err.message : "Načtení seznamu batch selhalo.";
+        }
+      }
+
+      async function loadBatchSqlToList(batchId) {
+        try {
+          const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(batchId)}/sql`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení SQL selhalo.");
+          selectedBatchSql = String(data.sqlCombined || "");
+          bulkListSqlOut.textContent = selectedBatchSql || "-";
+          bulkListCopySqlBtn.disabled = !selectedBatchSql;
+        } catch (err) {
+          bulkListSqlOut.textContent = "-";
+          bulkListCopySqlBtn.disabled = true;
+          errorEl.textContent = err instanceof Error ? err.message : "Načtení SQL selhalo.";
+        }
+      }
+
+      async function loadBulkSqlForBatch(batchId, silent = false) {
+        if (!batchId) return;
+        if (!silent) bulkStatus.textContent = "Načítám SQL pro batch...";
+        try {
+          const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(batchId)}/sql`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení SQL selhalo.");
+          lastBulkSql = String(data.sqlCombined || "");
+          bulkSqlOut.textContent = lastBulkSql || "-";
+          bulkCopySqlBtn.disabled = !lastBulkSql;
+          if (!silent) bulkStatus.textContent = `SQL připraveno. CZ: ${data.countCz || 0}, SK: ${data.countSk || 0}.`;
+        } catch (err) {
+          if (!silent) {
+            bulkStatus.textContent = "Načtení SQL selhalo.";
+            errorEl.textContent = err instanceof Error ? err.message : "Načtení SQL selhalo.";
+          }
+        }
+      }
+
       function summaryCard(label, value) {
         return `<div class="summary-item"><div class="k">${escapeHtml(String(label))}</div><div class="v">${escapeHtml(String(value ?? "-"))}</div></div>`;
       }
@@ -973,6 +1207,7 @@
             if (!res.ok) return;
             renderBulkTable(Array.isArray(data.items) ? data.items : []);
             renderBulkSummary(data.summary);
+            await loadBulkSqlForBatch(currentBatchId, true);
             const s = data.summary || {};
             const isActive = Number(s.generating || 0) > 0 || Number(s.waiting || 0) > 0;
             if (!isActive) stopBulkPolling();
