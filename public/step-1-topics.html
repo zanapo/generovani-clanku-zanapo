@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Krok 1 - Výběr tématu</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: #cbd5e1;
+      }
+      body { font-family: Inter, Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px; background: var(--bg); color: var(--text); }
+      .card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; background: var(--surface); }
+      label { display: block; margin: 10px 0 6px; font-weight: 600; }
+      input, button, select { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text); }
+      .actions { display: flex; gap: 8px; margin-top: 12px; }
+      .actions button { width: auto; }
+      .ideas { display: grid; gap: 10px; margin-top: 12px; }
+      .idea { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #fff; }
+      .idea h3 { margin: 0 0 8px; font-size: 1rem; }
+      .muted { color: var(--muted); }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .chip { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; margin-right: 8px; margin-bottom: 8px; }
+      @media (max-width: 760px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <h1>Krok 1/4 - Najít a vybrat téma</h1>
+    <div class="card">
+      <h2>Defaultní vstup: analýza e-shopu</h2>
+      <label for="shopUrl">URL e-shopu</label>
+      <input id="shopUrl" placeholder="např. https://zanapo.cz" />
+      <div class="row">
+        <div>
+          <label for="topicModel">Model pro návrhy</label>
+          <select id="topicModel"></select>
+        </div>
+        <div class="actions" style="align-items:end;">
+          <button id="analyzeBtn" type="button">Analyzovat e-shop (llms.txt + sitemap.xml)</button>
+        </div>
+      </div>
+      <div id="analyzeHint" class="muted">Analyzuj e-shop a vyber jednu z navržených kategorií jako fokus.</div>
+      <div id="shopCategories" class="ideas"></div>
+    </div>
+
+    <div class="card">
+      <h2>Generovat témata</h2>
+      <label for="focusMode">Směr témat</label>
+      <select id="focusMode">
+        <option value="category">Zaměřit na vybranou kategorii e-shopu</option>
+        <option value="general">Obecně/trendy (návštěvnost)</option>
+      </select>
+      <div id="focusPreview" class="muted">Nejprve analyzuj e-shop a vyber kategorii.</div>
+      <label for="audience">Cílovka</label>
+      <input id="audience" placeholder="např. rodiče dětí 4-12 let" />
+      <div class="actions">
+        <button id="findBtn" type="button" disabled>Najít témata</button>
+        <button id="nextBtn" type="button" disabled>Pokračovat na business brief</button>
+      </div>
+      <div id="hint" class="muted">Vyber téma tlačítkem „Použít“.</div>
+      <div id="ideas" class="ideas"></div>
+    </div>
+
+    <script>
+      const key = "zanapoWizardDraft";
+      const shopUrlEl = document.getElementById("shopUrl");
+      const topicModelEl = document.getElementById("topicModel");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const analyzeHint = document.getElementById("analyzeHint");
+      const shopCategoriesEl = document.getElementById("shopCategories");
+      const focusModeEl = document.getElementById("focusMode");
+      const focusPreviewEl = document.getElementById("focusPreview");
+      const audienceEl = document.getElementById("audience");
+      const findBtn = document.getElementById("findBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const hint = document.getElementById("hint");
+      const ideasEl = document.getElementById("ideas");
+      let selected = null;
+      let latestDiscovery = null;
+      let selectedCategory = null;
+
+      const draft = readDraft();
+      shopUrlEl.value = draft.shopUrl || "https://zanapo.cz";
+      audienceEl.value = draft.audience || "";
+      focusModeEl.value = draft.focusMode || "category";
+      selectedCategory = draft.selectedCategory || null;
+      latestDiscovery = draft.shopDiscovery || null;
+      hydrateModelOptions();
+      refreshFocusPreview();
+      refreshGenerateAvailability();
+
+      focusModeEl.addEventListener("change", () => {
+        saveDraft({ focusMode: focusModeEl.value });
+        refreshFocusPreview();
+        refreshGenerateAvailability();
+      });
+
+      analyzeBtn.addEventListener("click", async () => {
+        analyzeHint.textContent = "Analyzuji e-shop...";
+        shopCategoriesEl.innerHTML = "";
+        selectedCategory = null;
+        latestDiscovery = null;
+        refreshFocusPreview();
+        refreshGenerateAvailability();
+        const res = await fetch("/api/articles/shop-discovery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shopUrl: shopUrlEl.value.trim(),
+            model: topicModelEl.value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          analyzeHint.textContent = data.error || "Analýza e-shopu se nepodařila.";
+          return;
+        }
+        latestDiscovery = data;
+        const categories = Array.isArray(data?.strategy?.topicCategories) ? data.strategy.topicCategories : [];
+        analyzeHint.textContent = "Analýza hotová. Vyber kategorii, nebo přepni na Obecně/trendy.";
+        shopCategoriesEl.innerHTML = categories.map((c, i) => `
+          <div class="idea">
+            <h3>${i + 1}. ${escapeHtml(c.name || "")}</h3>
+            <p><strong>Proč relevantní:</strong> ${escapeHtml(c.whyRelevant || "")}</p>
+            <p><strong>Klíčová slova:</strong> ${(c.focusKeywords || []).map((k) => escapeHtml(k)).join(", ")}</p>
+            <button type="button" data-pick-category="${i}">Použít jako fokus</button>
+          </div>
+        `).join("");
+
+        const trendIdeas = Array.isArray(data?.strategy?.seasonalTrendIdeas) ? data.strategy.seasonalTrendIdeas : [];
+        if (trendIdeas.length > 0) {
+          shopCategoriesEl.innerHTML += `
+            <div class="idea">
+              <h3>Obecně / trendy témata</h3>
+              <p>${trendIdeas.slice(0, 4).map((t) => escapeHtml(`${t.season}: ${t.topic}`)).join(" • ")}</p>
+            </div>
+          `;
+        }
+
+        saveDraft({
+          shopUrl: shopUrlEl.value.trim(),
+          shopDiscovery: data,
+          selectedCategory: null
+        });
+
+        shopCategoriesEl.querySelectorAll("button[data-pick-category]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-pick-category"));
+            const cat = categories[idx];
+            if (!cat) return;
+            selectedCategory = cat;
+            if (!audienceEl.value) audienceEl.value = "zákazníci e-shopu";
+            analyzeHint.textContent = "Kategorie vybrána. Teď klikni na Najít témata.";
+            saveDraft({ selectedCategory: cat, audience: audienceEl.value.trim() });
+            refreshFocusPreview();
+            refreshGenerateAvailability();
+          });
+        });
+        refreshFocusPreview();
+        refreshGenerateAvailability();
+      });
+
+      findBtn.addEventListener("click", async () => {
+        const focus = computeEffectiveFocus();
+        if (!focus) {
+          hint.textContent = "Nejprve analyzuj e-shop a vyber kategorii, nebo přepni na Obecně/trendy.";
+          return;
+        }
+        hint.textContent = "Načítám témata...";
+        ideasEl.innerHTML = "";
+        const res = await fetch("/api/articles/topic-ideas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ focus, audience: audienceEl.value.trim(), model: topicModelEl.value })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          hint.textContent = data.error || "Nepovedlo se načíst témata.";
+          return;
+        }
+        if (data.keywordMetrics) {
+          const km = data.keywordMetrics;
+          const providerLabel = km.provider === "google_ads" ? "Google Ads API" : "bez SEO API";
+          const note = km.note ? ` (${km.note})` : "";
+          hint.textContent = `Témata načtena. Hledanost: ${providerLabel}, pokrytí ${km.matchedKeywords || 0} klíčových frází${note}.`;
+        }
+
+        const ideas = Array.isArray(data.ideas) ? data.ideas : [];
+        ideasEl.innerHTML = ideas
+          .map((idea, i) => `
+            <div class="idea">
+              <h3>${i + 1}. ${escapeHtml(idea.topic || "")}</h3>
+              <p><strong>Cílovka:</strong> ${escapeHtml(idea.audience || "")}</p>
+              <p><strong>Klíčová slova:</strong> ${(idea.keywords || []).map((k) => escapeHtml(k)).join(", ")}</p>
+              ${renderMetrics(idea.seoMetrics)}
+              <p><strong>Proč teď:</strong> ${escapeHtml(idea.whyNow || "")}</p>
+              <button type="button" data-pick="${i}">Použít</button>
+            </div>
+          `)
+          .join("");
+
+        ideasEl.querySelectorAll("button[data-pick]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            selected = ideas[Number(btn.getAttribute("data-pick"))];
+            hint.textContent = "Téma vybráno. Pokračuj na business brief.";
+            nextBtn.disabled = false;
+            localStorage.setItem(
+              key,
+              JSON.stringify({
+                ...readDraft(),
+                shopUrl: shopUrlEl.value.trim(),
+                focusMode: focusModeEl.value,
+                focus,
+                audience: audienceEl.value.trim(),
+                topic: selected.topic || "",
+                keywords: Array.isArray(selected.keywords) ? selected.keywords.join(", ") : "",
+                selectedIdea: selected,
+                selectedTopicModel: topicModelEl.value,
+                selectedCategory
+              })
+            );
+          });
+        });
+      });
+
+      nextBtn.addEventListener("click", () => {
+        window.location.href = "/step-2-business.html";
+      });
+
+      function escapeHtml(v) {
+        return String(v).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      }
+
+      function readDraft() {
+        try {
+          return JSON.parse(localStorage.getItem(key) || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function saveDraft(patch) {
+        localStorage.setItem(key, JSON.stringify({ ...readDraft(), ...patch }));
+      }
+
+      function computeEffectiveFocus() {
+        if (!latestDiscovery) return "";
+        if (focusModeEl.value === "category") return selectedCategory?.name || "";
+        const summary = latestDiscovery?.strategy?.shopSummary || "e-shop";
+        return `obecná a trendová témata pro ${summary}`;
+      }
+
+      function refreshFocusPreview() {
+        if (!latestDiscovery) {
+          focusPreviewEl.textContent = "Nejprve analyzuj e-shop.";
+          return;
+        }
+        if (focusModeEl.value === "category") {
+          focusPreviewEl.textContent = selectedCategory?.name
+            ? `Fokus: ${selectedCategory.name}`
+            : "Vyber jednu kategorii z výsledků analýzy.";
+          return;
+        }
+        focusPreviewEl.textContent = "Fokus: Obecně/trendy (sezónní témata, návštěvnost, širší dosah).";
+      }
+
+      function refreshGenerateAvailability() {
+        const hasDiscovery = Boolean(latestDiscovery);
+        const mode = focusModeEl.value;
+        const canRun = hasDiscovery && (mode === "general" || Boolean(selectedCategory?.name));
+        findBtn.disabled = !canRun;
+      }
+
+      function renderMetrics(metrics) {
+        if (!metrics || typeof metrics !== "object") return "";
+        const volume = Number.isFinite(metrics.monthlySearchVolume) ? String(metrics.monthlySearchVolume) : "n/a";
+        const competition = metrics.competition ? escapeHtml(metrics.competition) : "n/a";
+        const cpc = Number.isFinite(metrics.cpcUsd) ? `$${Number(metrics.cpcUsd).toFixed(2)}` : "n/a";
+        return `<p><strong>SEO metriky:</strong> hledanost/měsíc ${volume}, konkurence ${competition}, CPC ${cpc}</p>`;
+      }
+
+      async function hydrateModelOptions() {
+        const defaults = [
+          { id: "gpt-4.1-nano", label: "GPT-4.1 Nano (nejlevnější)" },
+          { id: "gpt-4.1-mini", label: "GPT-4.1 Mini (balanc)" },
+          { id: "gpt-4.1", label: "GPT-4.1 (nejkvalitnější)" }
+        ];
+        let options = defaults;
+        try {
+          const res = await fetch("/api/articles/model-plan");
+          const data = await res.json();
+          if (Array.isArray(data.availableModels)) {
+            options = data.availableModels.map((m) => ({
+              id: m.id,
+              label: `${m.label} (${m.costHint})`
+            }));
+          }
+        } catch {}
+
+        const selected = draft.selectedTopicModel || "gpt-4.1-nano";
+        topicModelEl.innerHTML = options
+          .map((o) => `<option value="${o.id}" ${o.id === selected ? "selected" : ""}>${escapeHtml(o.label)}</option>`)
+          .join("");
+      }
+    </script>
+  </body>
+</html>

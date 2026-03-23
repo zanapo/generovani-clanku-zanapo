@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Krok 3 - Vytvořit článek</title>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px; }
+      .card { border: 1px solid #d1d5db; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      label { display: block; margin: 10px 0 6px; font-weight: 600; }
+      input, textarea, button { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #9ca3af; }
+      textarea { min-height: 100px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .actions { display: flex; gap: 8px; margin-top: 12px; }
+      .actions button { width: auto; }
+      .muted { color: #6b7280; }
+      .error { color: #dc2626; }
+    </style>
+  </head>
+  <body>
+    <h1>Krok 3/4 - Vytvořit článek</h1>
+    <div class="card">
+      <div id="hint" class="muted">Zkontroluj data a vytvoř článek.</div>
+      <label for="topic">Téma</label>
+      <input id="topic" />
+      <div class="row">
+        <div>
+          <label for="audience">Cílovka</label>
+          <input id="audience" />
+        </div>
+        <div>
+          <label for="style">Styl</label>
+          <input id="style" />
+        </div>
+      </div>
+      <label for="keywords">Klíčová slova (čárka)</label>
+      <input id="keywords" />
+      <label for="links">Interní odkazy (URL | Anchor)</label>
+      <textarea id="links"></textarea>
+      <div class="actions">
+        <button id="backBtn" type="button">Zpět</button>
+        <button id="createBtn" type="button">Vytvořit a pokračovat na kroky agentů</button>
+      </div>
+      <div id="error" class="error"></div>
+    </div>
+
+    <script>
+      const key = "zanapoWizardDraft";
+      const draft = JSON.parse(localStorage.getItem(key) || "{}");
+      if (!draft.topic) window.location.href = "/step-1-topics.html";
+
+      const topic = document.getElementById("topic");
+      const audience = document.getElementById("audience");
+      const style = document.getElementById("style");
+      const keywords = document.getElementById("keywords");
+      const links = document.getElementById("links");
+      const error = document.getElementById("error");
+
+      topic.value = draft.topic || "";
+      audience.value = draft.audience || "";
+      style.value = draft.style || (draft.businessFields?.tonePreset || "praktický");
+      keywords.value = draft.keywords || "";
+      links.value = draft.links || "https://zanapo.cz/deskove-hry | Deskové hry\nhttps://zanapo.cz/sachy | Šachy";
+
+      document.getElementById("backBtn").addEventListener("click", () => {
+        window.location.href = "/step-2-business.html";
+      });
+
+      document.getElementById("createBtn").addEventListener("click", async () => {
+        error.textContent = "";
+        const internalLinks = links.value
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const [href, anchor] = line.split("|").map((x) => (x || "").trim());
+            return { href, anchor };
+          })
+          .filter((x) => x.href && x.anchor);
+
+        const payload = {
+          topic: topic.value.trim(),
+          audience: audience.value.trim(),
+          keywords: keywords.value.trim(),
+          style: style.value.trim(),
+          internalLinks,
+          businessFields: draft.businessFields || {}
+        };
+
+        const res = await fetch("/api/articles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          error.textContent = data.error ? JSON.stringify(data.error) : "Nepodařilo se vytvořit článek.";
+          return;
+        }
+
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            ...draft,
+            topic: payload.topic,
+            audience: payload.audience,
+            keywords: payload.keywords,
+            style: payload.style,
+            links: links.value,
+            articleId: data.id
+          })
+        );
+
+        window.location.href = `/index.html?articleId=${encodeURIComponent(data.id)}`;
+      });
+    </script>
+  </body>
+</html>

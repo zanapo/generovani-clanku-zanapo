@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zanapo AI Blogger Admin</title>
+    <style>
+      :root {
+        --bg: #eceff3;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --muted: #5b6472;
+        --border: #d7dce3;
+        --primary: #8bc53f;
+        --surface-soft: #f4f6f9;
+        --shadow: 0 1px 1px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.07);
+        --topbar-bg: #2f3339;
+        --topbar-link: #d9dde5;
+      }
+      body {
+        font-family: Inter, Arial, sans-serif;
+        margin: 0;
+        line-height: 1.4;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .page-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 22px;
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 1.45rem;
+      }
+      .app-topbar {
+        background: var(--topbar-bg);
+        border-bottom: 1px solid #1f2329;
+      }
+      .topbar-inner {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 10px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .topbar-brand {
+        width: 42px;
+        height: 22px;
+        border-radius: 2px;
+        background: #d8a4a1;
+      }
+      .main-nav {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .main-nav a {
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        padding: 8px 10px;
+        color: var(--topbar-link);
+        font-weight: 500;
+        font-size: 0.92rem;
+      }
+      .main-nav a.active {
+        color: #fff;
+        border-bottom-color: var(--primary);
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin: 10px 0 6px;
+      }
+      input, textarea, button, select {
+        width: 100%;
+        box-sizing: border-box;
+        font: inherit;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+      }
+      textarea {
+        min-height: 100px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .actions { 
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .actions.wrap {
+        flex-wrap: wrap;
+      }
+      .actions button {
+        width: auto;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        background: var(--surface-soft);
+        color: var(--text);
+      }
+      #htmlOut {
+        max-height: 360px;
+        overflow: auto;
+      }
+      #htmlPreview {
+        width: 100%;
+        min-height: 520px;
+        border: 1px solid #8884;
+        border-radius: 8px;
+        background: white;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .topic-ideas {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .topic-idea {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        background: var(--surface-soft);
+      }
+      .topic-idea h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+      .topic-idea p {
+        margin: 6px 0;
+      }
+      .topic-idea .actions {
+        margin-top: 8px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 0.8rem;
+        background: #fff;
+      }
+      .stages-grid {
+        display: grid;
+        gap: 14px;
+      }
+      .stage-card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+      .stage-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .stage-title {
+        font-weight: 700;
+        font-size: 1rem;
+      }
+      .stage-status {
+        font-size: 0.82rem;
+        border-radius: 999px;
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .stage-status.not_run {
+        background: #eef2f7;
+        color: #334155;
+      }
+      .stage-status.queued {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-color: #93c5fd;
+      }
+      .stage-status.generating {
+        background: #ede9fe;
+        color: #6d28d9;
+        border-color: #c4b5fd;
+      }
+      .stage-status.done {
+        background: #dcfce7;
+        color: #166534;
+        border-color: #86efac;
+      }
+      .stage-status.failed {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #fca5a5;
+      }
+      .progress {
+        height: 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 10px 0 8px;
+        background: #f1f5f9;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+        background: #64748b;
+      }
+      .progress-bar.running {
+        background: linear-gradient(90deg, var(--primary), #60a5fa, var(--primary));
+        background-size: 200% 100%;
+        animation: flow 1.1s linear infinite;
+      }
+      .progress-bar.done {
+        background: #16a34a;
+      }
+      .progress-bar.failed {
+        background: #dc2626;
+      }
+      .stage-meta {
+        font-size: 0.88rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .stage-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .stage-actions button {
+        width: auto;
+      }
+      .stage-output {
+        margin-top: 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 6px 10px;
+      }
+      .stage-output summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--text);
+        padding: 2px 0;
+      }
+      .stage-output pre {
+        max-height: 220px;
+        overflow: auto;
+        margin-top: 8px;
+      }
+      .stage-html-preview {
+        width: 100%;
+        min-height: 320px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: white;
+      }
+      .stage-model-select {
+        width: 280px;
+        max-width: 100%;
+      }
+      .warn {
+        color: #d97706;
+      }
+      @keyframes flow {
+        from { background-position: 200% 0; }
+        to { background-position: 0 0; }
+      }
+      .ok { color: #2d9d53; }
+      .error { color: #d64545; }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #161b22;
+          --surface: #111827;
+          --text: #e5e7eb;
+          --muted: #cbd5e1;
+          --border: #334155;
+          --primary: #8bc53f;
+          --surface-soft: #0f172a;
+          --shadow: none;
+          --topbar-bg: #0f1318;
+          --topbar-link: #c6cfdb;
+        }
+        input, textarea, button, select {
+          background: #0f172a;
+          color: var(--text);
+        }
+        .stage-status.not_run {
+          background: #1e293b;
+          color: #cbd5e1;
+          border-color: #334155;
+        }
+        .stage-status.queued {
+          background: #1e3a8a;
+          color: #dbeafe;
+          border-color: #3b82f6;
+        }
+        .stage-status.generating {
+          background: #4c1d95;
+          color: #ede9fe;
+          border-color: #8b5cf6;
+        }
+        .stage-status.done {
+          background: #14532d;
+          color: #dcfce7;
+          border-color: #22c55e;
+        }
+        .stage-status.failed {
+          background: #7f1d1d;
+          color: #fee2e2;
+          border-color: #ef4444;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app-topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand" aria-hidden="true"></div>
+        <nav class="main-nav" aria-label="Hlavní navigace">
+          <a href="/">Dashboard</a>
+          <a href="/index.html" class="active">Generování článku</a>
+          <a href="/web-description.html">Vytváření popisku na web</a>
+        </nav>
+      </div>
+    </header>
+    <div class="page-shell">
+    <h1>Zanapo AI Blogger Admin</h1>
+    <div class="card">
+      <h2>Wizard</h2>
+      <div class="actions wrap">
+        <a href="/step-1-topics.html"><button type="button">Krok 1: Témata</button></a>
+        <a href="/step-2-business.html"><button type="button">Krok 2: Business brief</button></a>
+        <a href="/step-3-create.html"><button type="button">Krok 3: Vytvořit článek</button></a>
+        <a href="/index.html"><button type="button">Krok 4: Spouštět agenty</button></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Nový článek</h2>
+      <div class="actions">
+        <button id="topicIdeasBtn" type="button">1) Najít témata</button>
+        <select id="topicIdeasModel" style="max-width: 360px;"></select>
+      </div>
+      <div id="topicIdeasHint" class="muted">Klikni na "Najít témata", pak vyber jedno a data se automaticky předvyplní.</div>
+      <div id="topicIdeasList" class="topic-ideas"></div>
+      <form id="articleForm">
+        <label for="topic">Téma</label>
+        <input id="topic" name="topic" required minlength="5" placeholder="Např. Jak vybrat první šachovou sadu pro děti" />
+
+        <div class="row">
+          <div>
+            <label for="audience">Cílová skupina</label>
+            <input id="audience" name="audience" placeholder="Např. rodiče začátečníků" />
+          </div>
+          <div>
+            <label for="style">Styl</label>
+            <input id="style" name="style" placeholder="Např. přátelský a praktický" />
+          </div>
+        </div>
+
+        <label for="keywords">Klíčová slova (oddělená čárkou)</label>
+        <input id="keywords" name="keywords" placeholder="šachy pro děti, šachová sada, začátečníci" />
+
+        <label for="links">Interní odkazy (každý řádek: URL | Anchor)</label>
+        <textarea id="links" name="links" placeholder="https://zanapo.cz/sachy | Šachy a příslušenství"></textarea>
+
+        <div class="actions">
+          <button type="submit">Vytvořit článek (jen záznam)</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>2-7) Ruční agenti</h2>
+      <div id="stagesHint" class="muted">Po vytvoření článku spouštěj kroky postupně. U každého kroku uvidíš stav i výstup.</div>
+      <div id="stagesGrid" class="stages-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Stav</h2>
+      <div>ID článku: <span id="articleId" class="mono">-</span></div>
+      <div>Status: <span id="status" class="mono">-</span></div>
+      <div id="error" class="error"></div>
+      <div class="actions">
+        <button id="regenerateBtn" type="button" disabled>Regenerovat</button>
+        <button id="exportBtn" type="button" disabled>Načíst export</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Export (JSON)</h2>
+      <pre id="exportOut">-</pre>
+    </div>
+
+    <div class="card">
+      <h2>Výstup HTML (raw)</h2>
+      <pre id="htmlOut">-</pre>
+    </div>
+
+    <div class="card">
+      <h2>Náhled HTML</h2>
+      <iframe id="htmlPreview" sandbox="allow-same-origin"></iframe>
+    </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("articleForm");
+      const topicIdeasBtn = document.getElementById("topicIdeasBtn");
+      const topicIdeasModel = document.getElementById("topicIdeasModel");
+      const topicIdeasHint = document.getElementById("topicIdeasHint");
+      const topicIdeasList = document.getElementById("topicIdeasList");
+      const stagesHint = document.getElementById("stagesHint");
+      const stagesGrid = document.getElementById("stagesGrid");
+      const articleIdEl = document.getElementById("articleId");
+      const statusEl = document.getElementById("status");
+      const errorEl = document.getElementById("error");
+      const exportOut = document.getElementById("exportOut");
+      const htmlOut = document.getElementById("htmlOut");
+      const htmlPreview = document.getElementById("htmlPreview");
+      const regenerateBtn = document.getElementById("regenerateBtn");
+      const exportBtn = document.getElementById("exportBtn");
+      const topicInput = document.getElementById("topic");
+      const audienceInput = document.getElementById("audience");
+      const styleInput = document.getElementById("style");
+      const keywordsInput = document.getElementById("keywords");
+      const linksInput = document.getElementById("links");
+      const STAGE_ORDER = [
+        "deep_research",
+        "outline_planner",
+        "content_writer",
+        "seo_editor",
+        "html_validator",
+        "final_packager"
+      ];
+      const STAGE_LABELS = {
+        deep_research: "2) Deep research",
+        outline_planner: "3) Osnova",
+        content_writer: "4) Writer",
+        seo_editor: "5) SEO editor",
+        html_validator: "6) HTML validátor",
+        final_packager: "7) Final packager"
+      };
+      const MODEL_PLAN_UI = {
+        topic_ideas: { model: "gpt-4.1-nano", note: "rychlý brainstorming", estimatedCostUsd: "~$0.001-0.005" },
+        deep_research: { model: "gpt-4.1", note: "hluboká rešerše", estimatedCostUsd: "~$0.02-0.09" },
+        outline_planner: { model: "gpt-4.1-mini", note: "struktura osnovy", estimatedCostUsd: "~$0.003-0.015" },
+        content_writer: { model: "gpt-4.1", note: "hlavní text článku", estimatedCostUsd: "~$0.03-0.12" },
+        seo_editor: { model: "gpt-4.1", note: "SEO + čitelnost", estimatedCostUsd: "~$0.02-0.08" },
+        html_validator: { model: "gpt-4.1-mini", note: "HTML a pravidla", estimatedCostUsd: "~$0.002-0.01" },
+        final_packager: { model: "gpt-4.1-mini", note: "finální sjednocení", estimatedCostUsd: "~$0.002-0.01" }
+      };
+
+      let currentArticleId = "";
+      let pollTimer = null;
+      let stageState = [];
+      let modelPlan = structuredClone(MODEL_PLAN_UI);
+      let availableModels = [
+        { id: "gpt-4.1-nano", label: "GPT-4.1 Nano", costHint: "nejlevnější" },
+        { id: "gpt-4.1-mini", label: "GPT-4.1 Mini", costHint: "dobrý poměr" },
+        { id: "gpt-4.1", label: "GPT-4.1", costHint: "nejvyšší kvalita" }
+      ];
+
+      topicIdeasBtn.textContent = `1) Najít témata (${modelPlan.topic_ideas.model}, ${modelPlan.topic_ideas.estimatedCostUsd})`;
+      renderTopicIdeasModelSelect();
+
+      loadModelPlan();
+      hydrateFromWizardDraft();
+
+      function parseLinks(text) {
+        return text
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const [href, anchor] = line.split("|").map((v) => (v || "").trim());
+            return { href, anchor };
+          })
+          .filter((v) => v.href && v.anchor);
+      }
+
+      function hydrateFromWizardDraft() {
+        try {
+          const draft = JSON.parse(localStorage.getItem("zanapoWizardDraft") || "{}");
+          if (!topicInput.value && draft.topic) topicInput.value = draft.topic;
+          if (!audienceInput.value && draft.audience) audienceInput.value = draft.audience;
+          if (!keywordsInput.value && draft.keywords) keywordsInput.value = draft.keywords;
+          if (!styleInput.value && draft.style) styleInput.value = draft.style;
+          if (!linksInput.value && draft.links) linksInput.value = draft.links;
+
+          const params = new URLSearchParams(window.location.search);
+          const articleIdFromUrl = params.get("articleId");
+          const articleId = articleIdFromUrl || draft.articleId || "";
+          if (articleId) {
+            currentArticleId = articleId;
+            articleIdEl.textContent = articleId;
+            regenerateBtn.disabled = false;
+            refreshStatus();
+            refreshStages();
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(() => {
+              refreshStatus();
+              refreshStages();
+            }, 3000);
+          }
+        } catch {
+          // no-op for invalid local storage payload
+        }
+      }
+
+      async function fetchJson(url, options = {}) {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+        return data;
+      }
+
+      async function refreshStatus() {
+        if (!currentArticleId) return;
+
+        try {
+          const data = await fetchJson(`/api/articles/${currentArticleId}`);
+          statusEl.textContent = data.status;
+          statusEl.className = data.status === "done" ? "mono ok" : "mono";
+          errorEl.textContent = data.error || "";
+
+          const hasVersion = Array.isArray(data.versions) && data.versions.length > 0;
+          const done = data.status === "done" && hasVersion;
+          regenerateBtn.disabled = false;
+          exportBtn.disabled = !done;
+
+          if ((data.status === "done" && hasVersion) || data.status === "failed") {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+        } catch (e) {
+          errorEl.textContent = e.message;
+        }
+      }
+
+      async function loadModelPlan() {
+        try {
+          const remote = await fetchJson("/api/articles/model-plan");
+          if (remote && typeof remote === "object" && remote.plan) {
+            modelPlan = { ...modelPlan, ...remote.plan };
+            if (Array.isArray(remote.availableModels)) availableModels = remote.availableModels;
+            topicIdeasBtn.textContent = `1) Najít témata (${modelPlan.topic_ideas.model}, ${modelPlan.topic_ideas.estimatedCostUsd})`;
+            renderTopicIdeasModelSelect();
+            if (stageState.length > 0) renderStages(stageState);
+          }
+        } catch {
+          // Keep UI defaults when model plan endpoint is not available
+        }
+      }
+
+      async function refreshStages() {
+        if (!currentArticleId) return;
+        try {
+          const data = await fetchJson(`/api/articles/${currentArticleId}/stages`);
+          stageState = Array.isArray(data.stages) ? data.stages : [];
+          renderStages(stageState);
+        } catch (e) {
+          errorEl.textContent = e.message;
+        }
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorEl.textContent = "";
+        exportOut.textContent = "-";
+        htmlOut.textContent = "-";
+        htmlPreview.srcdoc = "";
+        stagesGrid.innerHTML = "";
+        stagesHint.textContent = "Po vytvoření článku spouštěj kroky postupně. U každého kroku uvidíš stav i výstup.";
+
+        const payload = {
+          topic: document.getElementById("topic").value.trim(),
+          audience: document.getElementById("audience").value.trim(),
+          style: document.getElementById("style").value.trim(),
+          keywords: document.getElementById("keywords").value.trim(),
+          internalLinks: parseLinks(document.getElementById("links").value)
+        };
+
+        try {
+          const data = await fetchJson("/api/articles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          currentArticleId = data.id;
+          articleIdEl.textContent = currentArticleId;
+          statusEl.textContent = data.status;
+          regenerateBtn.disabled = false;
+          exportBtn.disabled = true;
+
+          if (pollTimer) clearInterval(pollTimer);
+          pollTimer = setInterval(refreshStatus, 3000);
+          refreshStatus();
+          refreshStages();
+        } catch (err) {
+          errorEl.textContent = err.message;
+        }
+      });
+
+      topicIdeasBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        topicIdeasHint.textContent = "Načítám návrhy témat...";
+        topicIdeasList.innerHTML = "";
+        try {
+          const payload = {
+            focus: topicInput.value.trim() || "šachy a deskové hry",
+            audience: audienceInput.value.trim() || "zákazníci e-shopu Zanapo",
+            model: topicIdeasModel.value || modelPlan.topic_ideas.model
+          };
+          const data = await fetchJson("/api/articles/topic-ideas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          renderTopicIdeas(data.ideas || []);
+          if (data.keywordMetrics) {
+            const km = data.keywordMetrics;
+            const providerLabel = km.provider === "google_ads" ? "Google Ads API" : "bez SEO API";
+            const note = km.note ? ` (${km.note})` : "";
+            topicIdeasHint.textContent = `Vyber téma tlačítkem "Vybrat". SEO metriky: ${providerLabel}, pokrytí ${km.matchedKeywords || 0}${note}.`;
+          } else {
+            topicIdeasHint.textContent = "Vyber téma tlačítkem \"Vybrat\" a formulář se předvyplní.";
+          }
+        } catch (err) {
+          errorEl.textContent = err.message;
+          topicIdeasHint.textContent = "Nepodařilo se načíst témata.";
+          topicIdeasList.innerHTML = "";
+        }
+      });
+
+      regenerateBtn.addEventListener("click", async () => {
+        if (!currentArticleId) return;
+        errorEl.textContent = "";
+        try {
+          const data = await fetchJson(`/api/articles/${currentArticleId}/regenerate`, {
+            method: "POST"
+          });
+          statusEl.textContent = data.status;
+          exportBtn.disabled = true;
+          if (pollTimer) clearInterval(pollTimer);
+          pollTimer = setInterval(refreshStatus, 3000);
+          refreshStatus();
+          refreshStages();
+        } catch (err) {
+          errorEl.textContent = err.message;
+        }
+      });
+
+      exportBtn.addEventListener("click", async () => {
+        if (!currentArticleId) return;
+        errorEl.textContent = "";
+        try {
+          const data = await fetchJson(`/api/articles/${currentArticleId}/export`);
+          exportOut.textContent = JSON.stringify(data, null, 2);
+          htmlOut.textContent = data.contentHtml || "-";
+          htmlPreview.srcdoc = buildPreviewDoc(data.contentHtml || "<p>Bez HTML obsahu.</p>");
+        } catch (err) {
+          const msg = String(err.message || "");
+          if (msg.includes("No version yet")) {
+            errorEl.textContent = "Export zatím není dostupný. Pro finální výstup spusť 7) Final packager.";
+          } else {
+            errorEl.textContent = msg;
+          }
+        }
+      });
+
+      function buildPreviewDoc(contentHtml) {
+        return `<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body { font-family: Inter, Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #1f2937; }
+      h1, h2, h3 { line-height: 1.25; margin-top: 1.2em; }
+      table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+      th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; }
+      th { background: #f3f4f6; }
+      nav { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #f9fafb; }
+      a { color: #2563eb; }
+      dt { font-weight: 700; margin-top: 10px; }
+      dd { margin-left: 0; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>${contentHtml}</body>
+</html>`;
+      }
+
+      function renderTopicIdeasModelSelect() {
+        const recommended = modelPlan.topic_ideas.model || "gpt-4.1-nano";
+        topicIdeasModel.innerHTML = availableModels
+          .map((model) => {
+            const selected = model.id === recommended ? "selected" : "";
+            return `<option value="${model.id}" ${selected}>${escapeHtml(model.label)} (${escapeHtml(model.costHint || "")})</option>`;
+          })
+          .join("");
+      }
+
+      function renderStages(stages) {
+        if (!currentArticleId) {
+          stagesGrid.innerHTML = "";
+          return;
+        }
+
+        const byStage = Object.fromEntries((stages || []).map((s) => [s.stage, s]));
+        stagesGrid.innerHTML = STAGE_ORDER.map((stage, index) => {
+          const s = byStage[stage] || { stage, status: "not_run", output: null, error: null, updatedAt: null };
+          const prevStage = index === 0 ? null : STAGE_ORDER[index - 1];
+          const prevDone = !prevStage || (byStage[prevStage] && byStage[prevStage].status === "done");
+          const canRun = prevDone && s.status !== "generating";
+          const info = getStageUiInfo(s.status, s.updatedAt);
+          const inputText = s.input ? escapeHtml(JSON.stringify(s.input, null, 2)) : "Payload zatím není k dispozici.";
+          const outputText = s.output ? escapeHtml(JSON.stringify(s.output, null, 2)) : "Výstup zatím není k dispozici.";
+          const htmlFromOutput = getContentHtmlFromOutput(s.output);
+          const hasHtmlOutput = Boolean(htmlFromOutput);
+          const errorText = s.error ? `<div class="error">${escapeHtml(String(s.error))}</div>` : "";
+          const stuckText = info.stuck ? `<div class="warn">Krok běží podezřele dlouho. Zkus zkontrolovat API limity nebo klikni znovu po chvíli.</div>` : "";
+
+          return `
+            <div class="stage-card">
+              <div class="stage-head">
+                <div class="stage-title">${STAGE_LABELS[stage] || stage} (${modelPlan[stage]?.model || "model"}, ${modelPlan[stage]?.estimatedCostUsd || "~$?"})</div>
+                <div class="stage-status mono ${info.statusClass}">${info.label}</div>
+              </div>
+              <div class="progress"><div class="progress-bar ${info.barClass}" style="width:${info.progress}%"></div></div>
+              <div class="stage-meta muted">${modelPlan[stage]?.note || ""} | ${formatTimestamp(s.updatedAt)}</div>
+              ${stuckText}
+              ${errorText}
+              <label for="model-${stage}">Model pro tento krok</label>
+              <select id="model-${stage}" class="stage-model-select">
+                ${availableModels.map((m) => `<option value="${m.id}" ${m.id === (modelPlan[stage]?.model || "") ? "selected" : ""}>${m.label} (${m.costHint})</option>`).join("")}
+              </select>
+              <div class="stage-actions">
+                <button type="button" data-run-stage="${stage}" ${canRun ? "" : "disabled"}>Spustit krok</button>
+                <button type="button" data-copy-payload="${stage}" ${s.input ? "" : "disabled"}>Zkopírovat payload</button>
+                <button type="button" data-copy-stage="${stage}" ${s.output ? "" : "disabled"}>Zkopírovat výstup</button>
+              </div>
+              <details class="stage-output" ${s.status === "done" || s.status === "generating" ? "open" : ""}>
+                <summary>Payload kroku</summary>
+                <pre>${inputText}</pre>
+              </details>
+              <details class="stage-output" ${s.status === "done" ? "open" : ""}>
+                <summary>Výstup kroku</summary>
+                <pre>${outputText}</pre>
+              </details>
+              ${hasHtmlOutput ? `
+                <details class="stage-output" open>
+                  <summary>Náhled HTML</summary>
+                  <iframe class="stage-html-preview" data-preview-stage="${stage}" sandbox="allow-same-origin"></iframe>
+                </details>
+              ` : ""}
+            </div>
+          `;
+        }).join("");
+
+        const runButtons = stagesGrid.querySelectorAll("button[data-run-stage]");
+        runButtons.forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const stage = btn.getAttribute("data-run-stage");
+            if (!stage || !currentArticleId) return;
+            errorEl.textContent = "";
+            try {
+              const modelSelect = document.getElementById(`model-${stage}`);
+              const selectedModel = modelSelect ? modelSelect.value : undefined;
+              await fetchJson(`/api/articles/${currentArticleId}/stages/${stage}/run`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ model: selectedModel })
+              });
+              if (selectedModel) {
+                modelPlan[stage] = { ...(modelPlan[stage] || {}), model: selectedModel };
+              }
+              statusEl.textContent = "queued";
+              stagesHint.textContent = `Spuštěn krok: ${STAGE_LABELS[stage] || stage}`;
+              if (pollTimer) clearInterval(pollTimer);
+              pollTimer = setInterval(() => {
+                refreshStatus();
+                refreshStages();
+              }, 3000);
+              refreshStatus();
+              refreshStages();
+            } catch (err) {
+              errorEl.textContent = err.message;
+              refreshStages();
+            }
+          });
+        });
+
+        const copyButtons = stagesGrid.querySelectorAll("button[data-copy-stage]");
+        copyButtons.forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const stage = btn.getAttribute("data-copy-stage");
+            if (!stage) return;
+            const item = byStage[stage];
+            if (!item || !item.output) return;
+
+            const text = JSON.stringify(item.output, null, 2);
+            try {
+              await navigator.clipboard.writeText(text);
+              const original = btn.textContent;
+              btn.textContent = "Zkopírováno";
+              setTimeout(() => {
+                btn.textContent = original;
+              }, 1200);
+            } catch {
+              errorEl.textContent = "Nepodařilo se zkopírovat do schránky.";
+            }
+          });
+        });
+
+        const copyPayloadButtons = stagesGrid.querySelectorAll("button[data-copy-payload]");
+        copyPayloadButtons.forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const stage = btn.getAttribute("data-copy-payload");
+            if (!stage) return;
+            const item = byStage[stage];
+            if (!item || !item.input) return;
+
+            const text = JSON.stringify(item.input, null, 2);
+            try {
+              await navigator.clipboard.writeText(text);
+              const original = btn.textContent;
+              btn.textContent = "Zkopírováno";
+              setTimeout(() => {
+                btn.textContent = original;
+              }, 1200);
+            } catch {
+              errorEl.textContent = "Nepodařilo se zkopírovat payload do schránky.";
+            }
+          });
+        });
+
+        const previewFrames = stagesGrid.querySelectorAll("iframe[data-preview-stage]");
+        previewFrames.forEach((frame) => {
+          const stage = frame.getAttribute("data-preview-stage");
+          if (!stage) return;
+          const item = byStage[stage];
+          const contentHtml = getContentHtmlFromOutput(item?.output);
+          if (!contentHtml) return;
+          frame.srcdoc = buildPreviewDoc(contentHtml);
+        });
+      }
+
+      function getStageUiInfo(status, updatedAt) {
+        if (status === "done") return { label: "done", progress: 100, barClass: "done", stuck: false, statusClass: "done" };
+        if (status === "failed") return { label: "failed", progress: 100, barClass: "failed", stuck: false, statusClass: "failed" };
+        if (status === "queued") return { label: "queued", progress: 18, barClass: "", stuck: false, statusClass: "queued" };
+        if (status === "generating") {
+          const stuck = isStuck(updatedAt, 120);
+          return {
+            label: stuck ? "generating (možná zaseknuto)" : "generating",
+            progress: 72,
+            barClass: "running",
+            stuck,
+            statusClass: "generating"
+          };
+        }
+        return { label: "not_run", progress: 0, barClass: "", stuck: false, statusClass: "not_run" };
+      }
+
+      function isStuck(updatedAt, thresholdSec) {
+        if (!updatedAt) return false;
+        const ms = new Date(updatedAt).getTime();
+        if (Number.isNaN(ms)) return false;
+        return Date.now() - ms > thresholdSec * 1000;
+      }
+
+      function formatTimestamp(value) {
+        if (!value) return "Čeká na spuštění";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return "Čeká na spuštění";
+        return `Poslední změna: ${d.toLocaleString("cs-CZ")}`;
+      }
+
+      function getContentHtmlFromOutput(output) {
+        if (!output || typeof output !== "object") return "";
+        if (typeof output.contentHtml === "string" && output.contentHtml.trim()) return output.contentHtml;
+        if (output.articleJson && typeof output.articleJson === "object" && typeof output.articleJson.contentHtml === "string") {
+          return output.articleJson.contentHtml;
+        }
+        if (output.result && typeof output.result === "object" && typeof output.result.contentHtml === "string") {
+          return output.result.contentHtml;
+        }
+        return "";
+      }
+
+      function renderTopicIdeas(ideas) {
+        if (!Array.isArray(ideas) || ideas.length === 0) {
+          topicIdeasList.innerHTML = "<div class=\"muted\">Žádná témata nebyla vrácena.</div>";
+          return;
+        }
+
+        topicIdeasList.innerHTML = ideas
+          .map((idea, index) => {
+            const topic = escapeHtml(idea.topic || "Bez názvu");
+            const aud = escapeHtml(idea.audience || "");
+            const whyNow = escapeHtml(idea.whyNow || "");
+            const difficulty = escapeHtml(idea.difficulty || "medium");
+            const keywords = Array.isArray(idea.keywords) ? idea.keywords.map((k) => escapeHtml(String(k))).join(", ") : "";
+            const seoMetrics = renderTopicSeoMetrics(idea.seoMetrics);
+
+            return `
+              <div class="topic-idea">
+                <h3>${index + 1}. ${topic}</h3>
+                <p><span class="badge">Náročnost: ${difficulty}</span></p>
+                ${aud ? `<p><strong>Cílovka:</strong> ${aud}</p>` : ""}
+                ${keywords ? `<p><strong>Klíčová slova:</strong> ${keywords}</p>` : ""}
+                ${seoMetrics}
+                ${whyNow ? `<p><strong>Proč teď:</strong> ${whyNow}</p>` : ""}
+                <div class="actions">
+                  <button type="button" data-pick-index="${index}">Vybrat</button>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        const pickButtons = topicIdeasList.querySelectorAll("button[data-pick-index]");
+        pickButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-pick-index"));
+            const selected = ideas[idx];
+            if (!selected) return;
+            applyTopicIdea(selected);
+          });
+        });
+      }
+
+      function applyTopicIdea(idea) {
+        topicInput.value = String(idea.topic || "");
+        audienceInput.value = String(idea.audience || audienceInput.value || "");
+        if (Array.isArray(idea.keywords)) {
+          keywordsInput.value = idea.keywords.map((k) => String(k).trim()).filter(Boolean).join(", ");
+        }
+        if (!styleInput.value) {
+          styleInput.value = "prakticky, lidsky, bez omáčky";
+        }
+        if (!linksInput.value.trim()) {
+          linksInput.value = "https://zanapo.cz/deskove-hry | Deskové hry\nhttps://zanapo.cz/sachy | Šachy";
+        }
+        topicIdeasHint.textContent = "Téma vybráno. Klikni na \"Vytvořit článek\" a pak spusť 2) Deep research.";
+        topicInput.focus();
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function renderTopicSeoMetrics(metrics) {
+        if (!metrics || typeof metrics !== "object") return "";
+        const volume = Number.isFinite(metrics.monthlySearchVolume) ? String(metrics.monthlySearchVolume) : "n/a";
+        const competition = metrics.competition ? escapeHtml(String(metrics.competition)) : "n/a";
+        const cpc = Number.isFinite(metrics.cpcUsd) ? `$${Number(metrics.cpcUsd).toFixed(2)}` : "n/a";
+        return `<p><strong>SEO metriky:</strong> hledanost/měsíc ${volume}, konkurence ${competition}, CPC ${cpc}</p>`;
+      }
+    </script>
+  </body>
+</html>

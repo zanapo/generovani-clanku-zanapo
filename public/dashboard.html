@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zanapo AI - Dashboard</title>
+    <style>
+      :root {
+        --bg: #eceff3;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --muted: #5b6472;
+        --border: #d7dce3;
+        --primary: #8bc53f;
+        --topbar-bg: #2f3339;
+        --topbar-link: #d9dde5;
+        --shadow: 0 1px 1px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.07);
+      }
+      body {
+        font-family: Inter, Arial, sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .app-topbar {
+        background: var(--topbar-bg);
+        border-bottom: 1px solid #1f2329;
+      }
+      .topbar-inner {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 10px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .topbar-brand {
+        width: 42px;
+        height: 22px;
+        border-radius: 2px;
+        background: #d8a4a1;
+      }
+      .main-nav {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .main-nav a {
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        padding: 8px 10px;
+        color: var(--topbar-link);
+        font-weight: 500;
+        font-size: 0.92rem;
+      }
+      .main-nav a.active {
+        color: #fff;
+        border-bottom-color: var(--primary);
+      }
+      .page-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 22px;
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .apps {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .app-card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .app-card h2 {
+        margin: 0 0 8px;
+        font-size: 1.15rem;
+      }
+      .app-card p {
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+      .app-card a {
+        display: inline-block;
+        text-decoration: none;
+        border-radius: 999px;
+        padding: 8px 14px;
+        color: #fff;
+        background: var(--primary);
+        font-weight: 600;
+      }
+      @media (max-width: 820px) {
+        .apps {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #161b22;
+          --surface: #111827;
+          --text: #e5e7eb;
+          --muted: #cbd5e1;
+          --border: #334155;
+          --primary: #8bc53f;
+          --topbar-bg: #0f1318;
+          --topbar-link: #c6cfdb;
+          --shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app-topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand" aria-hidden="true"></div>
+        <nav class="main-nav" aria-label="Hlavní navigace">
+          <a href="/" class="active">Dashboard</a>
+          <a href="/index.html">Generování článku</a>
+          <a href="/web-description.html">Vytváření popisku na web</a>
+        </nav>
+      </div>
+    </header>
+    <div class="page-shell">
+    <h1>Dashboard</h1>
+    <p class="muted">Rozcestník pro jednotlivé AI aplikace.</p>
+
+    <div class="apps">
+      <section class="app-card">
+        <h2>Generování článku</h2>
+        <p>Plný workflow: témata, business brief, vytvoření článku a ruční kroky agentů 2-7.</p>
+        <a href="/index.html">Otevřít aplikaci</a>
+      </section>
+
+      <section class="app-card">
+        <h2>Vytváření popisku na web</h2>
+        <p>Samostatná aplikace pro generování popisků kategorií, produktů nebo landing sekcí.</p>
+        <a href="/web-description.html">Otevřít aplikaci</a>
+      </section>
+    </div>
+    </div>
+  </body>
+</html>

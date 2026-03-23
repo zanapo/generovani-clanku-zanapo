@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vytváření popisku na web v2</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+      :root {
+        --bg: #f5f6f9;
+        --surface: #ffffff;
+        --surface-soft: #f8f9fc;
+        --text: #121826;
+        --muted: #5f6775;
+        --border: #e5e8ef;
+        --primary: #0071e3;
+        --primary-strong: #005bb5;
+        --success: #0f9f5f;
+        --danger: #d14343;
+        --shadow: 0 10px 35px rgba(15, 23, 42, 0.07);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(1200px 400px at 30% -10%, #e9f2ff 0%, transparent 60%), var(--bg);
+        color: var(--text);
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        backdrop-filter: blur(14px);
+        background: rgba(255, 255, 255, 0.82);
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+      }
+      .topbar-inner {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .brand-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--primary);
+        box-shadow: 0 0 0 5px rgba(0, 113, 227, 0.15);
+      }
+      .main-nav {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .main-nav a {
+        text-decoration: none;
+        color: #334155;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .main-nav a:hover {
+        background: rgba(0, 0, 0, 0.03);
+      }
+      .main-nav a.active {
+        color: #fff;
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+      .page {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 28px 20px 42px;
+      }
+      .hero {
+        margin-bottom: 18px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+        letter-spacing: -0.02em;
+      }
+      .hero p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 16px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 16px;
+      }
+      .card + .card { margin-top: 14px; }
+      .card h2 {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+      }
+      .muted { color: var(--muted); }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      label {
+        display: block;
+        margin: 12px 0 6px;
+        font-weight: 600;
+        color: #202938;
+      }
+      input, textarea, select {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 11px 12px;
+        font: inherit;
+        background: #fff;
+        color: var(--text);
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+      input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: #9ecfff;
+        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.14);
+      }
+      textarea { min-height: 120px; resize: vertical; }
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      .inline-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        color: var(--muted);
+      }
+      .inline-check input[type="checkbox"] {
+        width: auto;
+      }
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #generateBtn {
+        background: var(--primary);
+        color: #fff;
+      }
+      #generateBtn:hover { background: var(--primary-strong); }
+      #copyBtn {
+        background: #eef2f8;
+        color: #253246;
+      }
+      #copyBtn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .status-line {
+        margin-top: 10px;
+        font-size: 0.95rem;
+      }
+      .error {
+        color: var(--danger);
+        font-weight: 600;
+        margin-top: 6px;
+      }
+      .research-list {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+      .research-list li { margin-bottom: 8px; line-height: 1.45; }
+      pre {
+        margin: 0;
+        max-height: 360px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: var(--surface-soft);
+      }
+      iframe {
+        width: 100%;
+        min-height: 520px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        background: rgba(15, 159, 95, 0.12);
+        color: #0b6e41;
+        border: 1px solid rgba(15, 159, 95, 0.18);
+      }
+      .btn-secondary {
+        background: #eef2f8;
+        color: #253246;
+      }
+      .table-wrap {
+        margin-top: 12px;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface-soft);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 780px;
+      }
+      th, td {
+        border-bottom: 1px solid var(--border);
+        padding: 9px 10px;
+        text-align: left;
+        font-size: 0.9rem;
+        vertical-align: top;
+      }
+      th {
+        background: #f2f5fa;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+        font-size: 0.82rem;
+      }
+      .status-chip {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+      }
+      .s-generated { background: rgba(15, 159, 95, 0.14); color: #0b6e41; border-color: rgba(15, 159, 95, 0.22); }
+      .s-failed { background: rgba(209, 67, 67, 0.14); color: #8e2020; border-color: rgba(209, 67, 67, 0.24); }
+      .s-input_incomplete { background: rgba(234, 179, 8, 0.16); color: #7c4a03; border-color: rgba(234, 179, 8, 0.3); }
+      .s-generating { background: rgba(59, 130, 246, 0.15); color: #1e40af; border-color: rgba(59, 130, 246, 0.3); }
+      .s-input_ready, .s-imported { background: rgba(15, 23, 42, 0.08); color: #1e293b; border-color: rgba(15, 23, 42, 0.16); }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(110px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .summary-item {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        padding: 8px 10px;
+      }
+      .summary-item .k {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .summary-item .v {
+        margin-top: 2px;
+        font-weight: 800;
+        font-size: 1rem;
+      }
+      .bulk-row {
+        cursor: pointer;
+      }
+      .bulk-row:hover {
+        background: rgba(0, 113, 227, 0.05);
+      }
+      .bulk-row.selected {
+        background: rgba(0, 113, 227, 0.1);
+      }
+      @media (max-width: 1020px) {
+        .layout { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 760px) {
+        .grid-2 { grid-template-columns: 1fr; }
+        .summary-grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand-dot" aria-hidden="true"></div>
+        <nav class="main-nav" aria-label="Hlavní navigace">
+          <a href="/">Dashboard</a>
+          <a href="/index.html">Generování článku</a>
+          <a href="/web-description.html" class="active">Vytváření popisku v2</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <h1>Generování popisku v2</h1>
+        <p>Moderní editor pro produktové popisky: vstupy vlevo, výstup a náhled vpravo. Připravené pro rychlé vložení na web.</p>
+      </section>
+
+      <section class="layout">
+        <div>
+          <div class="card">
+            <h2>Vstupní data produktu</h2>
+            <p class="muted">Vyplň 6 polí a systém vygeneruje strukturované HTML.</p>
+
+            <label for="variantName">1) Název varianty</label>
+            <input id="variantName" placeholder="Např. Trénink paměti: Maxi Člověče nezlob se" />
+
+            <div class="grid-2">
+              <div>
+                <label for="productId">ID produktu</label>
+                <input id="productId" placeholder="Např. 613294" />
+              </div>
+              <div>
+                <label for="ean">2) EAN kód</label>
+                <input id="ean" placeholder="Např. 8590878613294" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label for="productCode">3) Kód produktu</label>
+                <input id="productCode" placeholder="Např. 613294" />
+              </div>
+              <div></div>
+            </div>
+
+            <label for="shortDescription">4) Krátký popis</label>
+            <textarea id="shortDescription" placeholder="Krátký vstupní popis produktu"></textarea>
+
+            <label for="longDescription">5) Dlouhý popis</label>
+            <textarea id="longDescription" placeholder="Detailní popis, benefity, použití, emoce..."></textarea>
+
+            <div class="grid-2">
+              <div>
+                <label for="manufacturer">6) Výrobce</label>
+                <input id="manufacturer" placeholder="Např. Dino" />
+              </div>
+              <div>
+                <label for="model">Model</label>
+                <select id="model">
+                  <option value="gpt-4.1" selected>GPT-4.1 (profesionální kvalita)</option>
+                  <option value="gpt-4.1-mini">GPT-4.1 Mini (rychlejší)</option>
+                  <option value="gpt-4.1-nano">GPT-4.1 Nano (nejlevnější)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="generationVersion">Verze generování</label>
+                <select id="generationVersion">
+                  <option value="v1" selected>V1 - HTML popisek produktu</option>
+                  <option value="v2">V2 - Architektura modulu podle zadaného promptu</option>
+                </select>
+              </div>
+              <div>
+                <label for="category">Kategorie (volitelně, V2)</label>
+                <input id="category" placeholder="Např. deskové hry" />
+              </div>
+            </div>
+
+            <label for="packageContents">Obsah balení (volitelně, V2)</label>
+            <textarea id="packageContents" placeholder="Např. 1 herní plán, 16 figurek, 1 kostka, pravidla"></textarea>
+
+            <label for="parametersText">Parametry/atributy (volitelně, V2)</label>
+            <textarea id="parametersText" placeholder="Např. věk 5+, 2-4 hráči, materiál dřevo/karton..."></textarea>
+
+            <div class="actions">
+              <button id="generateBtn" type="button">Vygenerovat HTML popisek</button>
+              <button id="copyBtn" type="button" disabled>Kopírovat HTML</button>
+            </div>
+            <div id="status" class="status-line muted">Po vyplnění formuláře klikni na generování. V1 vždy generuje CZ (language_id=1) i SK (language_id=2).</div>
+            <div id="error" class="error"></div>
+          </div>
+
+          <div class="card">
+            <h2>Dohledané informace o produktu <span class="pill">Research</span></h2>
+            <div id="researchStatus" class="muted">Při generování se nejdřív zkusí dohledat veřejné informace.</div>
+            <ul id="researchList" class="research-list"></ul>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2 id="outputHeading">Výsledné HTML</h2>
+            <pre id="htmlOut">-</pre>
+          </div>
+
+          <div class="card">
+            <h2>Výsledné HTML (SK)</h2>
+            <pre id="htmlOutSk">-</pre>
+            <div class="actions">
+              <button id="copySkBtn" type="button" disabled>Kopírovat HTML SK</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>SQL update</h2>
+            <pre id="sqlOut">-</pre>
+            <div class="actions">
+              <button id="copySqlBtn" type="button" disabled>Kopírovat SQL</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>SQL update (SK, language_id = 2)</h2>
+            <pre id="sqlOutSk">-</pre>
+            <div class="actions">
+              <button id="copySqlSkBtn" type="button" disabled>Kopírovat SQL SK</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Náhled</h2>
+            <div class="grid-2" style="margin-bottom: 10px;">
+              <div>
+                <label for="previewLang">Jazyk náhledu</label>
+                <select id="previewLang">
+                  <option value="cz" selected>CZ</option>
+                  <option value="sk">SK</option>
+                </select>
+              </div>
+            </div>
+            <iframe id="preview" sandbox="allow-same-origin"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top: 16px;">
+        <h2>Hromadné generování z CSV</h2>
+        <p class="muted">Nahraj CSV, zkontroluj kvalitu vstupů a jedním klikem vygeneruj CZ+SK popisky i SQL do DB.</p>
+        <div class="grid-2">
+          <div>
+            <label for="bulkCsvFile">CSV soubor</label>
+            <input id="bulkCsvFile" type="file" accept=".csv,text/csv" />
+          </div>
+          <div>
+            <label for="bulkBatchId">Batch ID</label>
+            <input id="bulkBatchId" class="mono" placeholder="Automaticky po importu..." />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="bulkImportBtn" type="button">Importovat CSV</button>
+          <button id="bulkGenerateBtn" type="button" class="btn-secondary">Vygenerovat vše (připravené)</button>
+          <button id="bulkRefreshBtn" type="button" class="btn-secondary">Načíst batch</button>
+          <button id="bulkLoadSqlBtn" type="button" class="btn-secondary">Načíst SQL batch</button>
+          <button id="bulkCopySqlBtn" type="button" class="btn-secondary" disabled>Kopírovat SQL batch</button>
+        </div>
+        <div id="bulkStatus" class="status-line muted">Pro import se očekává CSV s poli jako ID, Název, Kód produktu, EAN, Krátký/Dlouhý popis, Výrobce.</div>
+        <div id="bulkSummary" class="summary-grid"></div>
+        <label for="bulkSqlOut">SQL pro celý batch</label>
+        <pre id="bulkSqlOut">-</pre>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID produktu</th>
+                <th>Název</th>
+                <th>Skóre</th>
+                <th>Stav</th>
+                <th>Tokeny</th>
+                <th>Cena USD</th>
+                <th>Problémy</th>
+                <th>CZ SQL</th>
+                <th>SK SQL</th>
+              </tr>
+            </thead>
+            <tbody id="bulkTableBody">
+              <tr><td colspan="9" class="muted">Zatím bez dat.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const generateBtn = document.getElementById("generateBtn");
+      const copyBtn = document.getElementById("copyBtn");
+      const statusEl = document.getElementById("status");
+      const errorEl = document.getElementById("error");
+      const htmlOut = document.getElementById("htmlOut");
+      const htmlOutSk = document.getElementById("htmlOutSk");
+      const sqlOut = document.getElementById("sqlOut");
+      const sqlOutSk = document.getElementById("sqlOutSk");
+      const preview = document.getElementById("preview");
+      const previewLang = document.getElementById("previewLang");
+      const researchStatus = document.getElementById("researchStatus");
+      const researchList = document.getElementById("researchList");
+      const copySqlBtn = document.getElementById("copySqlBtn");
+      const copySkBtn = document.getElementById("copySkBtn");
+      const copySqlSkBtn = document.getElementById("copySqlSkBtn");
+      const bulkCsvFile = document.getElementById("bulkCsvFile");
+      const bulkBatchId = document.getElementById("bulkBatchId");
+      const bulkImportBtn = document.getElementById("bulkImportBtn");
+      const bulkGenerateBtn = document.getElementById("bulkGenerateBtn");
+      const bulkRefreshBtn = document.getElementById("bulkRefreshBtn");
+      const bulkLoadSqlBtn = document.getElementById("bulkLoadSqlBtn");
+      const bulkCopySqlBtn = document.getElementById("bulkCopySqlBtn");
+      const bulkStatus = document.getElementById("bulkStatus");
+      const bulkTableBody = document.getElementById("bulkTableBody");
+      const bulkSqlOut = document.getElementById("bulkSqlOut");
+      const bulkSummary = document.getElementById("bulkSummary");
+
+      const formEls = {
+        variantName: document.getElementById("variantName"),
+        productId: document.getElementById("productId"),
+        ean: document.getElementById("ean"),
+        productCode: document.getElementById("productCode"),
+        shortDescription: document.getElementById("shortDescription"),
+        longDescription: document.getElementById("longDescription"),
+        manufacturer: document.getElementById("manufacturer"),
+        model: document.getElementById("model")
+        , generationVersion: document.getElementById("generationVersion")
+        , category: document.getElementById("category")
+        , packageContents: document.getElementById("packageContents")
+        , parametersText: document.getElementById("parametersText")
+      };
+
+      let lastHtml = "";
+      let lastHtmlSk = "";
+      let lastSql = "";
+      let lastSqlSk = "";
+      let currentBatchId = "";
+      let lastBulkSql = "";
+      let bulkPollTimer = null;
+      let selectedBulkItemId = "";
+
+      previewLang.addEventListener("change", () => {
+        refreshPreviewFromCurrentOutputs();
+      });
+
+      generateBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        statusEl.textContent = "Generuji popisek...";
+        copyBtn.disabled = true;
+        copySqlBtn.disabled = true;
+        copySkBtn.disabled = true;
+        copySqlSkBtn.disabled = true;
+
+        const payload = {
+          productId: formEls.productId.value.trim(),
+          variantName: formEls.variantName.value.trim(),
+          ean: formEls.ean.value.trim(),
+          productCode: formEls.productCode.value.trim(),
+          shortDescription: formEls.shortDescription.value.trim(),
+          longDescription: formEls.longDescription.value.trim(),
+          manufacturer: formEls.manufacturer.value.trim(),
+          model: formEls.model.value,
+          category: formEls.category.value.trim(),
+          packageContents: formEls.packageContents.value.trim(),
+          parametersText: formEls.parametersText.value.trim()
+        };
+        const generationVersion = formEls.generationVersion.value;
+
+        if (!payload.productId || !payload.variantName || !payload.ean || !payload.productCode || !payload.shortDescription || !payload.longDescription || !payload.manufacturer) {
+          statusEl.textContent = "Doplň prosím všechna povinná vstupní pole.";
+          return;
+        }
+
+        try {
+          const endpoint = generationVersion === "v2" ? "/api/web-description/generate-v2" : "/api/web-description/generate";
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error ? JSON.stringify(data.error) : "Generování selhalo.");
+          }
+
+          if (generationVersion === "v2") {
+            lastHtml = String(data.reportMarkdown || "");
+            htmlOut.textContent = lastHtml || "-";
+            lastSql = "";
+            lastHtmlSk = "";
+            lastSqlSk = "";
+            sqlOut.textContent = "SQL update je dostupný pouze pro V1.";
+            htmlOutSk.textContent = "SK verze je dostupná pouze pro V1.";
+            sqlOutSk.textContent = "SQL SK update je dostupný pouze pro V1.";
+            preview.srcdoc = buildTextPreview(lastHtml || "Bez výstupu");
+            document.getElementById("outputHeading").textContent = "Výsledný návrh (Markdown)";
+            researchStatus.textContent = "V2 režim používá architektonický prompt, research panel není využit.";
+            researchList.innerHTML = "";
+          } else {
+            lastHtml = String(data.finalHtml || "");
+            htmlOut.textContent = lastHtml || "-";
+            lastSql = String(data.sqlUpdate || "");
+            sqlOut.textContent = lastSql || "SQL update se nepodařilo vytvořit.";
+            const skHtml = String(data?.sk?.finalHtml || "");
+            lastHtmlSk = skHtml;
+            htmlOutSk.textContent = skHtml || "SK verze nebyla vygenerována.";
+            lastSqlSk = String(data.sqlUpdateSk || "");
+            sqlOutSk.textContent = lastSqlSk || "SQL SK update se nepodařilo vytvořit.";
+            refreshPreviewFromCurrentOutputs();
+            document.getElementById("outputHeading").textContent = "Výsledné HTML";
+            renderResearch(data.research);
+          }
+          copyBtn.disabled = !lastHtml;
+          copySqlBtn.disabled = !lastSql;
+          copySkBtn.disabled = !lastHtmlSk;
+          copySqlSkBtn.disabled = !lastSqlSk;
+          statusEl.textContent = `Hotovo. Model: ${data.modelUsed || payload.model}`;
+        } catch (err) {
+          errorEl.textContent = err instanceof Error ? err.message : "Generování selhalo.";
+          statusEl.textContent = "Nepodařilo se vygenerovat popisek.";
+        }
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        if (!lastHtml) return;
+        try {
+          await navigator.clipboard.writeText(lastHtml);
+          const original = copyBtn.textContent;
+          copyBtn.textContent = "Zkopírováno";
+          setTimeout(() => {
+            copyBtn.textContent = original;
+          }, 1100);
+        } catch {
+          errorEl.textContent = "Nepodařilo se zkopírovat HTML do schránky.";
+        }
+      });
+
+      copySqlBtn.addEventListener("click", async () => {
+        if (!lastSql) return;
+        try {
+          await navigator.clipboard.writeText(lastSql);
+          const original = copySqlBtn.textContent;
+          copySqlBtn.textContent = "Zkopírováno";
+          setTimeout(() => {
+            copySqlBtn.textContent = original;
+          }, 1100);
+        } catch {
+          errorEl.textContent = "Nepodařilo se zkopírovat SQL do schránky.";
+        }
+      });
+
+      copySkBtn.addEventListener("click", async () => {
+        if (!lastHtmlSk) return;
+        try {
+          await navigator.clipboard.writeText(lastHtmlSk);
+          const original = copySkBtn.textContent;
+          copySkBtn.textContent = "Zkopírováno";
+          setTimeout(() => {
+            copySkBtn.textContent = original;
+          }, 1100);
+        } catch {
+          errorEl.textContent = "Nepodařilo se zkopírovat SK HTML do schránky.";
+        }
+      });
+
+      copySqlSkBtn.addEventListener("click", async () => {
+        if (!lastSqlSk) return;
+        try {
+          await navigator.clipboard.writeText(lastSqlSk);
+          const original = copySqlSkBtn.textContent;
+          copySqlSkBtn.textContent = "Zkopírováno";
+          setTimeout(() => {
+            copySqlSkBtn.textContent = original;
+          }, 1100);
+        } catch {
+          errorEl.textContent = "Nepodařilo se zkopírovat SK SQL do schránky.";
+        }
+      });
+
+      bulkImportBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        const file = bulkCsvFile.files && bulkCsvFile.files[0];
+        if (!file) {
+          bulkStatus.textContent = "Vyber nejdříve CSV soubor.";
+          return;
+        }
+        bulkStatus.textContent = "Importuji CSV...";
+        try {
+          const csvContent = await file.text();
+          const res = await fetch("/api/web-description/bulk/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ csvContent, delimiter: ";" })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Import selhal.");
+          currentBatchId = String(data.batchId || "");
+          bulkBatchId.value = currentBatchId;
+          bulkStatus.textContent = `Import hotov: ${data.importedCount || 0} produktů.`;
+          renderBulkTable(Array.isArray(data.items) ? data.items : []);
+          renderBulkSummary(data.summary);
+          startBulkPolling();
+        } catch (err) {
+          bulkStatus.textContent = "Import CSV selhal.";
+          errorEl.textContent = err instanceof Error ? err.message : "Import CSV selhal.";
+        }
+      });
+
+      bulkRefreshBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        const batchId = (bulkBatchId.value || currentBatchId || "").trim();
+        if (!batchId) {
+          bulkStatus.textContent = "Zadej nebo importuj Batch ID.";
+          return;
+        }
+        bulkStatus.textContent = "Načítám batch...";
+        try {
+          const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(batchId)}`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení batch selhalo.");
+          currentBatchId = batchId;
+          bulkStatus.textContent = `Batch ${batchId}: ${data.total || 0} položek.`;
+          renderBulkTable(Array.isArray(data.items) ? data.items : []);
+          renderBulkSummary(data.summary);
+          startBulkPolling();
+        } catch (err) {
+          bulkStatus.textContent = "Načtení batch selhalo.";
+          errorEl.textContent = err instanceof Error ? err.message : "Načtení batch selhalo.";
+        }
+      });
+
+      bulkGenerateBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        const batchId = (bulkBatchId.value || currentBatchId || "").trim();
+        if (!batchId) {
+          bulkStatus.textContent = "Nejprve importuj CSV nebo zadej Batch ID.";
+          return;
+        }
+        bulkStatus.textContent = "Generuji připravené produkty...";
+        try {
+          const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(batchId)}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: formEls.model.value, regenerateGenerated: false })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Bulk generování selhalo.");
+          bulkStatus.textContent = `Hotovo. Generated: ${data.generated || 0}, failed: ${data.failed || 0}, total: ${data.total || 0}.`;
+          renderBulkTable(Array.isArray(data.items) ? data.items : []);
+          renderBulkSummary(data.summary);
+          startBulkPolling();
+        } catch (err) {
+          bulkStatus.textContent = "Bulk generování selhalo.";
+          errorEl.textContent = err instanceof Error ? err.message : "Bulk generování selhalo.";
+        }
+      });
+
+      bulkLoadSqlBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        const batchId = (bulkBatchId.value || currentBatchId || "").trim();
+        if (!batchId) {
+          bulkStatus.textContent = "Nejprve importuj CSV nebo zadej Batch ID.";
+          return;
+        }
+        bulkStatus.textContent = "Načítám SQL pro batch...";
+        try {
+          const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(batchId)}/sql`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení SQL selhalo.");
+          lastBulkSql = String(data.sqlCombined || "");
+          bulkSqlOut.textContent = lastBulkSql || "-";
+          bulkCopySqlBtn.disabled = !lastBulkSql;
+          bulkStatus.textContent = `SQL připraveno. CZ: ${data.countCz || 0}, SK: ${data.countSk || 0}.`;
+        } catch (err) {
+          bulkStatus.textContent = "Načtení SQL selhalo.";
+          errorEl.textContent = err instanceof Error ? err.message : "Načtení SQL selhalo.";
+        }
+      });
+
+      bulkCopySqlBtn.addEventListener("click", async () => {
+        if (!lastBulkSql) return;
+        try {
+          await navigator.clipboard.writeText(lastBulkSql);
+          const original = bulkCopySqlBtn.textContent;
+          bulkCopySqlBtn.textContent = "Zkopírováno";
+          setTimeout(() => {
+            bulkCopySqlBtn.textContent = original;
+          }, 1100);
+        } catch {
+          errorEl.textContent = "Nepodařilo se zkopírovat SQL batch do schránky.";
+        }
+      });
+
+      function buildPreview(contentHtml) {
+        return `<!doctype html><html lang="cs"><head><meta charset="UTF-8"><style>
+          </style>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif; max-width: 860px; margin: 0 auto; padding: 20px; color: #0f172a; line-height: 1.6; }
+            .product-description { font-size: 15px; }
+            .product-description h2, .product-description h3 { line-height: 1.25; letter-spacing: -0.01em; }
+            .product-description img { max-width: 100%; border-radius: 10px; display: block; }
+          </style></head><body>${contentHtml}</body></html>`;
+      }
+
+      function refreshPreviewFromCurrentOutputs() {
+        const lang = previewLang.value === "sk" ? "sk" : "cz";
+        const html = lang === "sk" ? lastHtmlSk : lastHtml;
+        preview.srcdoc = buildPreview(html || `<p>${lang.toUpperCase()} náhled zatím není k dispozici.</p>`);
+      }
+
+      function buildTextPreview(text) {
+        const safe = escapeHtml(String(text || ""));
+        return `<!doctype html><html lang="cs"><head><meta charset="UTF-8"><style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Arial, sans-serif; max-width: 860px; margin: 0 auto; padding: 20px; color: #0f172a; line-height: 1.6; background: #fff; }
+          pre { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.55; }
+        </style></head><body><pre>${safe}</pre></body></html>`;
+      }
+
+      function renderResearch(research) {
+        if (!research || typeof research !== "object") {
+          researchStatus.textContent = "Výzkum produktu nebyl dostupný.";
+          researchList.innerHTML = "";
+          return;
+        }
+        const snippets = Array.isArray(research.snippets) ? research.snippets : [];
+        const note = research.note ? ` • ${research.note}` : "";
+        researchStatus.textContent = `Nalezeno ${snippets.length} poznatků${note}`;
+        researchList.innerHTML = snippets
+          .slice(0, 8)
+          .map((item) => `<li>${escapeHtml(String(item))}</li>`)
+          .join("");
+      }
+
+      function escapeHtml(v) {
+        return String(v)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      bulkTableBody.addEventListener("click", (event) => {
+        const row = event.target.closest("tr[data-item-id]");
+        if (!row) return;
+        const itemId = row.getAttribute("data-item-id");
+        if (!itemId) return;
+        selectedBulkItemId = itemId;
+        highlightSelectedRow();
+        loadBulkItemDetail(itemId);
+      });
+
+      function renderBulkTable(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+          bulkTableBody.innerHTML = '<tr><td colspan="9" class="muted">Batch je prázdný.</td></tr>';
+          return;
+        }
+        bulkTableBody.innerHTML = items.map((item) => {
+          const issues = parseIssues(item.issuesJson).join(", ");
+          const status = String(item.status || "unknown");
+          const czOk = item.sqlCz ? "ano" : "-";
+          const skOk = item.sqlSk ? "ano" : "-";
+          const rowCls = selectedBulkItemId && selectedBulkItemId === String(item.id) ? "bulk-row selected" : "bulk-row";
+          return `<tr class="${rowCls}" data-item-id="${escapeHtml(String(item.id || ""))}">
+            <td class="mono">${escapeHtml(String(item.sourceProductId || ""))}</td>
+            <td>${escapeHtml(String(item.name || ""))}</td>
+            <td>${Number.isFinite(item.qualityScore) ? String(item.qualityScore) : "-"}</td>
+            <td><span class="status-chip s-${escapeHtml(status)}">${escapeHtml(status)}</span></td>
+            <td class="mono">${formatInt(item.totalTokens)}</td>
+            <td class="mono">${formatUsd(item.totalCostUsd)}</td>
+            <td>${escapeHtml(issues || item.error || "-")}</td>
+            <td>${escapeHtml(czOk)}</td>
+            <td>${escapeHtml(skOk)}</td>
+          </tr>`;
+        }).join("");
+      }
+
+      function parseIssues(raw) {
+        if (!raw) return [];
+        try {
+          const parsed = JSON.parse(String(raw));
+          if (!Array.isArray(parsed)) return [];
+          return parsed.map((x) => String(x)).slice(0, 6);
+        } catch {
+          return [];
+        }
+      }
+
+      function renderBulkSummary(summary) {
+        if (!summary || typeof summary !== "object") {
+          bulkSummary.innerHTML = "";
+          return;
+        }
+        bulkSummary.innerHTML = [
+          summaryCard("Čeká", summary.waiting),
+          summaryCard("Generuje", summary.generating),
+          summaryCard("Hotovo", summary.generated),
+          summaryCard("Chyba", summary.failed),
+          summaryCard("Cena celkem USD", formatUsd(summary.totalCostUsd)),
+          summaryCard("Cena / popisek USD", formatUsd(summary.avgCostPerGeneratedUsd))
+        ].join("");
+      }
+
+      function summaryCard(label, value) {
+        return `<div class="summary-item"><div class="k">${escapeHtml(String(label))}</div><div class="v">${escapeHtml(String(value ?? "-"))}</div></div>`;
+      }
+
+      function formatUsd(value) {
+        const n = Number(value || 0);
+        return Number.isFinite(n) ? n.toFixed(4) : "-";
+      }
+
+      function formatInt(value) {
+        const n = Number(value || 0);
+        return Number.isFinite(n) && n > 0 ? String(Math.round(n)) : "-";
+      }
+
+      function highlightSelectedRow() {
+        const rows = bulkTableBody.querySelectorAll("tr.bulk-row");
+        rows.forEach((row) => {
+          if (row.getAttribute("data-item-id") === selectedBulkItemId) row.classList.add("selected");
+          else row.classList.remove("selected");
+        });
+      }
+
+      async function loadBulkItemDetail(itemId) {
+        try {
+          bulkStatus.textContent = "Načítám detail položky...";
+          const res = await fetch(`/api/web-description/bulk/item/${encodeURIComponent(itemId)}`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : "Načtení detailu selhalo.");
+          const item = data.item || {};
+          const czHtml = String(item.czFinalHtml || "");
+          const skHtml = String(item.skFinalHtml || "");
+          const czSql = String(item.sqlCz || "");
+          const skSql = String(item.sqlSk || "");
+
+          lastHtml = czHtml;
+          lastHtmlSk = skHtml;
+          lastSql = czSql;
+          lastSqlSk = skSql;
+          htmlOut.textContent = czHtml || "-";
+          htmlOutSk.textContent = skHtml || "-";
+          sqlOut.textContent = czSql || "-";
+          sqlOutSk.textContent = skSql || "-";
+          refreshPreviewFromCurrentOutputs();
+          copyBtn.disabled = !lastHtml;
+          copySkBtn.disabled = !lastHtmlSk;
+          copySqlBtn.disabled = !lastSql;
+          copySqlSkBtn.disabled = !lastSqlSk;
+
+          const tokenInfo = `CZ ${formatInt(item.czTotalTokens)} tok / ${formatUsd(item.czCostUsd)} USD | SK ${formatInt(item.skTotalTokens)} tok / ${formatUsd(item.skCostUsd)} USD | CELKEM ${formatInt(item.totalTokens)} tok / ${formatUsd(item.totalCostUsd)} USD`;
+          statusEl.textContent = `Detail: ${item.name || item.sourceProductId || item.id} • ${tokenInfo}`;
+          bulkStatus.textContent = `Detail načten: ${item.name || item.sourceProductId || item.id}`;
+        } catch (err) {
+          errorEl.textContent = err instanceof Error ? err.message : "Načtení detailu položky selhalo.";
+        }
+      }
+
+      function startBulkPolling() {
+        stopBulkPolling();
+        if (!currentBatchId) return;
+        bulkPollTimer = setInterval(async () => {
+          try {
+            const res = await fetch(`/api/web-description/bulk/${encodeURIComponent(currentBatchId)}`);
+            const data = await res.json();
+            if (!res.ok) return;
+            renderBulkTable(Array.isArray(data.items) ? data.items : []);
+            renderBulkSummary(data.summary);
+            const s = data.summary || {};
+            const isActive = Number(s.generating || 0) > 0 || Number(s.waiting || 0) > 0;
+            if (!isActive) stopBulkPolling();
+            if (selectedBulkItemId) {
+              const selected = (data.items || []).find((x) => String(x.id) === String(selectedBulkItemId));
+              if (selected && (selected.status === "generated" || selected.status === "failed")) {
+                await loadBulkItemDetail(selectedBulkItemId);
+              }
+            }
+          } catch {
+            // silent polling failure
+          }
+        }, 4000);
+      }
+
+      function stopBulkPolling() {
+        if (bulkPollTimer) {
+          clearInterval(bulkPollTimer);
+          bulkPollTimer = null;
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id        String   @id @default(cuid())
+  topic     String
+  audience  String?
+  keywords  String?
+  style     String?
+  briefJson String?
+  linksJson String?
+  status    String   @default("queued")
+  error     String?
+
+  versions  ArticleVersion[]
+  runs      ArticleAgentRun[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ArticleVersion {
+  id              String   @id @default(cuid())
+  articleId       String
+  article         Article  @relation(fields: [articleId], references: [id])
+  model           String
+  promptVersion   String
+  resultJson      String
+  contentHtml     String
+  contentMarkdown String?
+  metaTitle       String
+  metaDescription String
+  slug            String
+  readingTime     Int?
+  wordCount       Int?
+  createdAt       DateTime @default(now())
+
+  @@index([articleId, createdAt])
+}
+
+model ArticleAgentRun {
+  id         String   @id @default(cuid())
+  articleId  String
+  article    Article  @relation(fields: [articleId], references: [id])
+  stage      String
+  status     String   @default("queued")
+  inputJson  String?
+  outputJson String?
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([articleId, stage, createdAt])
+}
+
+model BulkProductDescription {
+  id               String   @id @default(cuid())
+  batchId          String
+  sourceProductId  String
+  name             String
+  productCode      String?
+  ean              String?
+  manufacturer     String?
+  category         String?
+  sourceLongText   String
+  sourceShortText  String?
+  status           String   @default("imported")
+  qualityScore     Int?
+  issuesJson       String?
+  czShortHtml      String?
+  czLongHtml       String?
+  czFinalHtml      String?
+  skShortHtml      String?
+  skLongHtml       String?
+  skFinalHtml      String?
+  sqlCz            String?
+  sqlSk            String?
+  czPromptTokens   Int?
+  czCompletionTokens Int?
+  czTotalTokens    Int?
+  czCostUsd        Float?
+  skPromptTokens   Int?
+  skCompletionTokens Int?
+  skTotalTokens    Int?
+  skCostUsd        Float?
+  totalTokens      Int?
+  totalCostUsd     Float?
+  error            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([batchId, createdAt])
+  @@index([batchId, status])
+}

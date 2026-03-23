@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Krok 2 - Business brief</title>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px; }
+      .card { border: 1px solid #d1d5db; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      label { display: block; margin: 10px 0 6px; font-weight: 600; }
+      input, textarea, select, button { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #9ca3af; }
+      textarea { min-height: 80px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .actions { display: flex; gap: 8px; margin-top: 12px; }
+      .actions button { width: auto; }
+      .muted { color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <h1>Krok 2/4 - Business brief</h1>
+    <div class="card">
+      <div class="muted">Téma: <span id="topicLabel"></span></div>
+      <div class="row">
+        <div>
+          <label for="goal">Business cíl</label>
+          <select id="goal">
+            <option value="traffic">Traffic</option>
+            <option value="conversion">Conversion</option>
+            <option value="authority">Authority</option>
+          </select>
+        </div>
+        <div>
+          <label for="type">Typ článku</label>
+          <select id="type">
+            <option value="pillar">Pillar</option>
+            <option value="cluster">Cluster</option>
+            <option value="landing-support">Landing support</option>
+          </select>
+        </div>
+      </div>
+      <label for="segments">Segmenty (každý na nový řádek)</label>
+      <textarea id="segments" placeholder="3-5 let&#10;6-8 let&#10;9-12 let"></textarea>
+      <label for="categories">Prioritní kategorie (každá na nový řádek)</label>
+      <textarea id="categories" placeholder="rodinné hry&#10;vědomostní hry&#10;hlavolamy"></textarea>
+      <label for="ctaGoal">Cíl CTA</label>
+      <input id="ctaGoal" placeholder="např. dovést na výpis rodinných her" />
+      <label for="tonePreset">Tón</label>
+      <input id="tonePreset" placeholder="rodičovský, praktický, srozumitelný" />
+      <div class="actions">
+        <button id="backBtn" type="button">Zpět</button>
+        <button id="nextBtn" type="button">Pokračovat na vytvoření článku</button>
+      </div>
+    </div>
+
+    <script>
+      const key = "zanapoWizardDraft";
+      const draft = JSON.parse(localStorage.getItem(key) || "{}");
+      if (!draft.topic) window.location.href = "/step-1-topics.html";
+
+      const topicLabel = document.getElementById("topicLabel");
+      topicLabel.textContent = draft.topic || "-";
+
+      const goal = document.getElementById("goal");
+      const type = document.getElementById("type");
+      const segments = document.getElementById("segments");
+      const categories = document.getElementById("categories");
+      const ctaGoal = document.getElementById("ctaGoal");
+      const tonePreset = document.getElementById("tonePreset");
+
+      const bf = draft.businessFields || {};
+      goal.value = bf.businessGoal || "traffic";
+      type.value = bf.articleType || "pillar";
+      segments.value = Array.isArray(bf.targetSegments) ? bf.targetSegments.join("\n") : "3-5 let\n6-8 let\n9-12 let\n13+";
+      categories.value = Array.isArray(bf.priorityCategories) ? bf.priorityCategories.join("\n") : "rodinné hry\nvědomostní hry\nhlavolamy";
+      ctaGoal.value = bf.ctaGoal || "";
+      tonePreset.value = bf.tonePreset || "rodičovský, praktický, bez akademického jazyka";
+
+      document.getElementById("backBtn").addEventListener("click", () => {
+        window.location.href = "/step-1-topics.html";
+      });
+
+      document.getElementById("nextBtn").addEventListener("click", () => {
+        const updated = {
+          ...draft,
+          businessFields: {
+            businessGoal: goal.value,
+            articleType: type.value,
+            targetSegments: segments.value.split("\n").map((s) => s.trim()).filter(Boolean),
+            priorityCategories: categories.value.split("\n").map((s) => s.trim()).filter(Boolean),
+            ctaGoal: ctaGoal.value.trim(),
+            tonePreset: tonePreset.value.trim()
+          }
+        };
+        localStorage.setItem(key, JSON.stringify(updated));
+        window.location.href = "/step-3-create.html";
+      });
+    </script>
+  </body>
+</html>
